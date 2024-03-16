@@ -1,0 +1,20 @@
+node_modules/
+lib/
+dist/
+out/
+*.zip
+*.pem
+
+# -- Yarn 2 - Zero install mode
+# (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+# --
+
+.next
+*.tsbuildinfo

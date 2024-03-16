@@ -1,0 +1,67 @@
+{
+  "name": "use-d3-pan-zoom",
+  "version": "0.0.0",
+  "author": "https://github.com/ts-web/",
+  "license": "ISC",
+  "description": "A headless hook for translating mouse/touch/pointer events to pan/zoom interactions. This is an adaptation of d3-zoom to React",
+  "keywords": [
+    "react",
+    "d3-zoom",
+    "gesture",
+    "pointers",
+    "pan",
+    "zoom"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ts-web/use-d3-pan-zoom.git"
+  },
+  "homepage": "https://ts-web.github.io/use-d3-pan-zoom/",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "start": "start-storybook -p 6007",
+    "all": "FORCE_COLOR=1 run-p build chk test lint",
+    "clean": "rimraf lib",
+    "build": "tsc",
+    "build-storybook": "build-storybook",
+    "chk": "FORCE_COLOR=1 run-p 'chk:*'",
+    "chk:tsc-tests": "tsc -p specs/tsconfig.json",
+    "chk:tsc-stories": "tsc -p src/stories/tsconfig.json",
+    "lint": "eslint 'src/**/*' --format codeframe --report-unused-disable-directives",
+    "test": "jest",
+    "watch": "FORCE_COLOR=1 run-p 'watch:*'",
+    "watch:ts": "tsc -w --preserveWatchOutput",
+    "storybook": "start-storybook -p 6006"
+  },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.13",
+    "@storybook/addon-actions": "^6.5.10",
+    "@storybook/builder-webpack5": "^6.5.10",
+    "@storybook/manager-webpack5": "^6.5.10",
+    "@storybook/react": "^6.5.10",
+    "@types/d3": "^7.4.0",
+    "@types/d3-scale": "^3.3.1",
+    "@types/jest": "^28.1.8",
+    "@types/react": "^18.0.18",
+    "babel-jest": "^28.1.3",
+    "babel-loader": "^8.2.5",
+    "d3": "^7.6.1",
+    "d3-scale": "^4.0.0",
+    "eslint": "^8.41.0",
+    "jest": "^28.1.3",
+    "npm-run-all": "^4.1.5",
+    "react": "^18",
+    "react-d3-axis-ts": "^1.0.0",
+    "react-dom": "^18",
+    "rimraf": "^3.0.2",
+    "tsconfig-paths-webpack-plugin": "^4.0.0",
+    "tween-functions-ts": "^1.0.0",
+    "typescript": "5.0.4",
+    "use-rev": "^1.0.2"
+  }
+}

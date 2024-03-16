@@ -13,16 +13,46 @@ export default {
 };
 
 
-const width = 1000;
-const height = 600;
+const chartWidth = 1000;
+const chartHeight = 600;
 
 
 export function Story () {
+  const [chartElement, setChartElement] = useState<Element | null>();
+
+  // When the chartElement is resolved, prevent the default action of certain events:
+  //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
+  //   - wheel — so that zooming the chart doesn't cause page scrolling.
+  //
+  // Note: this can't be done inline because JSX syntax doesn't support passing `{passive: false}` when registering event listener callbacks.
+  // See https://github.com/facebook/react/issues/6436
+  useEffect(() => {
+    if (!chartElement) return;
+    const preventDefault = (e: Event) => {e.preventDefault();};
+    chartElement.addEventListener('touchstart', preventDefault, {passive: false});
+    chartElement.addEventListener('wheel', preventDefault, {passive: false});
+    return () => {
+      chartElement.removeEventListener('touchstart', preventDefault);
+      chartElement.removeEventListener('wheel', preventDefault);
+    }
+  }, [chartElement]);
+
+  // Track the chart's offset, to be used when we calculate a pointer's position relative to the chart.
+  const chartOffset = useRef({x: 0, y: 0});
+  const updateChartOffset = () => {
+    if (!chartElement) return;
+    const rect = chartElement.getBoundingClientRect();
+    chartOffset.current = {
+      x: rect.x,
+      y: rect.y,
+    };
+  }
+
   const xScale = useMemo(() => {
     const _xScale = scalePow();
     _xScale.exponent(2);
     _xScale.domain([0, 100]);
-    _xScale.range([0, width]);
+    _xScale.range([0, chartWidth]);
     return _xScale;
   }, []);
 
@@ -30,14 +60,13 @@ export function Story () {
     const _yScale = scalePow();
     _yScale.exponent(2);
     _yScale.domain([0, 100]);
-    _yScale.range([height, 0]);
+    _yScale.range([chartHeight, 0]);
     return _yScale;
   }, []);
 
   const [rev, bumpRev] = useRev();
   const {
     onPointerDown,
-    onPointerMove,
     onPointerUp,
     onWheelZoom,
     gesture,
@@ -55,42 +84,43 @@ export function Story () {
       xSpan: 200,
       ySpan: 300,
     },
+    registerMoveListener: (onPointerMove) => {
+      // Only listen to move events while an interaction is happening.
+      // Listen on `document` so that a panning gesture can continue beyond the edge of the chart.
+      const handlePointermove = (e: PointerEvent) => {
+        onPointerMove(e.pointerId, {
+          x: e.clientX - chartOffset.current.x,
+          y: e.clientY - chartOffset.current.y,
+        });
+      };
+      document.addEventListener('pointermove', handlePointermove, {passive: false});
+      return () => {
+        document.removeEventListener('pointermove', handlePointermove);
+      };
+    },
   });
-
-  const handlePointermove = (e: PointerEvent) => {
-    onPointerMove(e.pointerId, {
-      x: e.clientX - viewRectRef.current!.x,
-      y: e.clientY - viewRectRef.current!.y,
-    });
-  }
-
-  const [viewEl, setViewEl] = useState<Element | null>();
-  const viewRectRef = useRef<DOMRect>();
-  const measure = () => {
-    viewRectRef.current = viewEl!.getBoundingClientRect();
-  }
 
   // preventDefault of certain events.
   // This can't be done in JSX callbacks because they can't specify `{passive: false}`.
   useEffect(() => {
-    if (!viewEl) return;
+    if (!chartElement) return;
     const preventDefault = (e: Event) => {
       e.preventDefault();
     };
     // 'touchstart' needs to be canceled or else the UA will sometimes hijack the touch for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
-    viewEl.addEventListener('touchstart', preventDefault, {passive: false});
+    chartElement.addEventListener('touchstart', preventDefault, {passive: false});
     // 'wheel' needs to be canceled so that the page doesn't scroll.
-    viewEl.addEventListener('wheel', preventDefault, {passive: false});
+    chartElement.addEventListener('wheel', preventDefault, {passive: false});
     return () => {
-      viewEl.removeEventListener('touchstart', preventDefault);
-      viewEl.removeEventListener('wheel', preventDefault);
+      chartElement.removeEventListener('touchstart', preventDefault);
+      chartElement.removeEventListener('wheel', preventDefault);
     }
-  }, [viewEl]);
+  }, [chartElement]);
 
   return (
     <div style={{
-      width,
-      height,
+      width: chartWidth,
+      height: chartHeight,
       border: '1px solid #666',
       position: 'relative',
     }}>
@@ -99,51 +129,45 @@ export function Story () {
         inset: 0,
       }}>
         <svg
-          ref={setViewEl}
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
+          ref={setChartElement}
+          width={chartWidth}
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           style={{
             overflow: 'hidden',
             userSelect: 'none',
           }}
           onPointerDown={(e) => {
-            // ignore right-clicks and middle-clicks.
+            // Only listen to primary button events (no right-clicks, etc).
             if (e.button !== 0) return;
-            measure();
-            if (!gesture.inProgress) {
-              document.addEventListener('pointermove', handlePointermove, {passive: false});
-            }
+            // Take note of the chart's on-screen position when the gesture starts.
+            updateChartOffset();
+            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
             e.currentTarget.setPointerCapture(e.pointerId);
+            // Report a pointer down, passing coordinates relative to the chart.
             onPointerDown(e.pointerId, {
-              x: e.clientX - viewRectRef.current!.x,
-              y: e.clientY - viewRectRef.current!.y,
+              x: e.clientX - chartOffset.current.x,
+              y: e.clientY - chartOffset.current.y,
             });
           }}
           onPointerUp={(e) => {
-            if (gesture.inProgress) {
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              onPointerUp(e.pointerId);
-            } else {
-              document.removeEventListener('pointermove', handlePointermove);
-            }
+            e.currentTarget.releasePointerCapture(e.pointerId);
+            onPointerUp(e.pointerId);
           }}
           onPointerLeave={(e) => {
-            if (!gesture.inProgress) return;
             onPointerUp(e.pointerId);
           }}
           onPointerCancel={(e) => {
-            if (!gesture.inProgress) return;
             onPointerUp(e.pointerId);
           }}
           onWheel={(e) => {
-            // Ignore wheel events if a gesture is in progress, because they simply don't work and add visual jitter.
-            if (gesture.inProgress) return;
-            measure();
+            // Take note of the chart's on-screen position.
+            updateChartOffset();
+            // Report a wheel zoom event, passing coordinates relative to the chart.
             onWheelZoom({
               center: {
-                x: e.clientX - viewRectRef.current!.x,
-                y: e.clientY - viewRectRef.current!.y,
+                x: e.clientX - chartOffset.current.x,
+                y: e.clientY - chartOffset.current.y,
               },
               zoomRatio: Math.pow(2, normalizeWheelDelta({
                 delta: e.deltaY,
@@ -156,29 +180,29 @@ export function Story () {
           <rect
             x={0}
             y={0}
-            width={width}
-            height={height}
+            width={chartWidth}
+            height={chartHeight}
             fill="whitesmoke"
           />
-          <g transform={`translate(${width}, 0)`}>
+          <g transform={`translate(${chartWidth}, 0)`}>
             <Axis
               orient="left"
               scale={yScale}
               tickArguments={[10]}
               color="#f99"
-              tickSizeInner={width - 40}
-              tickSizeOuter={width - 40}
+              tickSizeInner={chartWidth - 40}
+              tickSizeOuter={chartWidth - 40}
               scaleRev={rev}
             />
           </g>
-          <g transform={`translate(0, ${height})`}>
+          <g transform={`translate(0, ${chartHeight})`}>
             <Axis
               orient="top"
               scale={xScale}
               tickArguments={[10]}
               color="#99f"
-              tickSizeInner={height - 40}
-              tickSizeOuter={height - 40}
+              tickSizeInner={chartHeight - 40}
+              tickSizeOuter={chartHeight - 40}
               scaleRev={rev}
             />
           </g>
@@ -239,8 +263,8 @@ export function Story () {
           />
           {gesture.minZoom?.xSpan && gesture.minZoom.ySpan ? (
             <ZoomConstraint
-              domainX={xScale.invert(width / 2)}
-              domainY={yScale.invert(height / 2)}
+              domainX={xScale.invert(chartWidth / 2)}
+              domainY={yScale.invert(chartHeight / 2)}
               domainXSpan={gesture.minZoom.xSpan}
               domainYSpan={gesture.minZoom.ySpan}
               xScale={xScale}

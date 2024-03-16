@@ -4,52 +4,75 @@ import type { IBBox, IGesture, IScale } from './types';
 
 const SINGLE_AXIS_THRESHOLD = 100;
 
+
+
+/** The return value of `usePanZoom` */
+export interface IResult {
+  /**
+   * Call `onPointerDown` on pointer down events, passing the pointerId.
+   */
+  onPointerDown: (
+    pointerId: number,
+    pos: {x: number; y: number},
+  ) => void;
+
+  /**
+   * Call `onPointerUp` on pointer up events, passing the pointerId.
+   */
+  onPointerUp: (
+    pointerId: number,
+  ) => void;
+
+  /**
+   * Call `onWheelZoom` on wheel events from the chart element.
+   * Pass a position relative to the chart element.
+   * The zoomRatio is a number from `0..1` corresponding to the proportion of the domain to zoom by.
+   */
+  onWheelZoom: (opts: {
+    center: {x: number; y: number};
+    zoomRatio: number;
+  }) => void;
+
+  /**
+   * This is the gesture state. Not usually needed.
+   */
+  gesture: IGesture;
+}
+
+
 /**
  * `usePanZoom` — manipulate a pair of X and Y domains using a view.
- * Supports multi-touch user interactions and non-linear scales.
- *
- * Paradigm:
- * Each axis has a scale. A scale has a domain and a range. Each are represented by two numbers.
- * (`usePanZoom` does not support scales that have non-numeric domains, i.e. those without `invert` methods)
- * A domain has two numbers: the start and the end. This indicates the visible portion of the data.
- * The range also has two numbers, which are the view dimensions. So a range will be [0, width] or [height, 0].
- *
- * # Y range is flipped
- * The Y domain goes from small values to large, as per the convention.
- * But in the DOM view element, Y=0 is at the top, and Y gets larger as it goes downward.
- * However, in a chart, Y=0 is at the bottom and the larger values go upward.
- * So the chart's Y domain is the reverse of the DOM view.
- * To render properly, we invert the Y scale's range.
- * This paints the low domain values at the bottom of the chart, and the high domain values at the top of the chart.
- * In summary:
- *    - DOM Y=0      = top of chart    = domain max.
- *    - DOM Y=height = bottom of chart = domain min.
- *
- * The x and y scales must be passed in as d3 scales (or a compatible callable object with `domain`, `range`, `invert`, and `copy` methods).
- * `usePanZoom` will modify the scales' domains in-place, and will call `onUpdate` (but not on each update; only on animation frames).
- *
- * Method:
- *  - N pointers define a bbox in range space. When a pointer is added, it creates a new bbox (committing the previous gesture).
- *  - When pointers move, this bbox may resize. When compared to the origin bbox, the difference is applied to the domain as well.
- *    - The bbox difference is described by a center and width.
- *  - At the time when a bbox origin is described, the domain is snapshotted. When the gesture is in progress,
- *    the original bbox and domain will be referenced to produce the new domain.
- *
  */
 export function usePanZoom ({
   xScale,
   yScale,
   onUpdate,
-  constraint,
+  constrain,
   minZoom,
   maxZoom,
+  registerMoveListener,
 }: {
   xScale: IScale;
   yScale: IScale;
-  onUpdate: () => void;
-  constraint?: Partial<IBBox>;
+  onUpdate?: () => void;
+  constrain?: Partial<IBBox>;
   minZoom?: {xSpan?: number; ySpan?: number};
   maxZoom?: {xSpan?: number; ySpan?: number};
+  /**
+   * Implement this function to properly handle pointer move events.
+   * It should add a pointer move event listener, and return a function that removes it.
+   * This way, pointer move events are ignored unless the chart is actually being interacted with.
+   * This is important, because the pointer move listener must be attached on the entire document (for freedom of movement).
+   */
+  registerMoveListener: (
+    /**
+     * Call `onPointerMove` for every move of every pointer, passing the pointer position relative to the view element.
+     */
+    onPointerMove: (
+      pointerId: number,
+      pos: {x: number; y: number},
+    ) => void,
+  ) => (() => void);
 }): IResult {
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
   const yScaleRef = useRef(yScale); yScaleRef.current = yScale;
@@ -62,19 +85,19 @@ export function usePanZoom ({
     initialGestureBBox: {xMin: 0, xMax: 0, yMin: 0, yMax: 0, xWidth: 0, yHeight: 0}, // dummy default
     currentGestureBBox: {xMin: 0, xMax: 0, yMin: 0, yMax: 0, xWidth: 0, yHeight: 0}, // dummy default
     pointerPositions: new Map(),
-    constraint,
+    constraint: constrain,
     minZoom,
     maxZoom,
   });
 
-  gestureRef.current.constraint = constraint;
+  gestureRef.current.constraint = constrain;
   gestureRef.current.minZoom = minZoom;
   gestureRef.current.maxZoom = maxZoom;
 
   const updateTimeoutRef = useRef<number | undefined>();
   const update = useCallback(() => {
     updateTimeoutRef.current = undefined;
-    onUpdateRef.current();
+    onUpdateRef.current?.();
   }, []);
   const scheduleUpdate = useCallback(() => {
     if (!updateTimeoutRef.current) {
@@ -131,6 +154,9 @@ export function usePanZoom ({
   }, []);
   const resetGestureRef = useRef(resetGesture); resetGestureRef.current = resetGesture;
 
+  const registerMoveListenerRef = useRef(registerMoveListener); registerMoveListenerRef.current = registerMoveListener;
+  const removeMoveListenerRef = useRef<(() => void) | undefined>();
+
   /**
    * `onPointerDown` is called by the consumer when a new pointer has been pressed.
    * It includes the view-space coordinates and a pointer ID.
@@ -151,6 +177,22 @@ export function usePanZoom ({
       _gesture.inProgress = true;
       _gesture.pointerPositions.set(pointerId, pos);
       _resetGesture(_gesture);
+
+      const onPointerMove = (
+        pointerId: number,
+        pos: {x: number; y: number},
+      ) => {
+        const gesture = gestureRef.current;
+        if (!gesture.inProgress) return;
+        const _commitGesture = commitGestureRef.current;
+        const _scheduleUpdate = scheduleUpdateRef.current;
+
+        gesture.pointerPositions.set(pointerId, pos);
+        gesture.currentGestureBBox = calcBbox(gesture.pointerPositions);
+        _commitGesture(gesture);
+        _scheduleUpdate();
+      };
+      removeMoveListenerRef.current = registerMoveListenerRef.current(onPointerMove);
     } else {
       // Case: second or Nth pointer pressed down.
       // Commit the current gesture and start a new one.
@@ -162,25 +204,11 @@ export function usePanZoom ({
     _scheduleUpdate();
   }, []);
 
-  const onPointerMove = useCallback((
-    pointerId: number,
-    pos: {x: number; y: number},
-  ) => {
-    const gesture = gestureRef.current;
-    const _commitGesture = commitGestureRef.current;
-    const _scheduleUpdate = scheduleUpdateRef.current;
-
-    if (!gesture.inProgress) return;
-    gesture.pointerPositions.set(pointerId, pos);
-    gesture.currentGestureBBox = calcBbox(gesture.pointerPositions);
-    _commitGesture(gesture);
-    _scheduleUpdate();
-  }, []);
-
   const onPointerUp = useCallback((
     pointerId: number,
   ) => {
     const _gesture = gestureRef.current;
+    if (!_gesture.inProgress) return;
     const _commitGesture = commitGestureRef.current;
     const _scheduleUpdate = scheduleUpdateRef.current;
     const _resetGesture = resetGestureRef.current;
@@ -190,6 +218,13 @@ export function usePanZoom ({
     _scheduleUpdate();
     _gesture.pointerPositions.delete(pointerId);
     _resetGesture(_gesture);
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- wrong; function calls change gesture state
+    if (!_gesture.inProgress) {
+      // At the end of the interaction, stop listening to move events.
+      removeMoveListenerRef.current?.();
+      removeMoveListenerRef.current = undefined;
+    }
   }, []);
 
   const onWheelZoom = useCallback(({
@@ -200,6 +235,8 @@ export function usePanZoom ({
     zoomRatio: number;
   }) => {
     const _gesture = gestureRef.current;
+    // Ignore wheel events if a gesture is in progress, because they simply don't work and add visual jitter.
+    if (_gesture.inProgress) return;
     const _xScale = xScaleRef.current;
     const _yScale = yScaleRef.current;
     const _scheduleUpdate = scheduleUpdateRef.current;
@@ -219,34 +256,8 @@ export function usePanZoom ({
 
   return {
     onPointerDown,
-    onPointerMove,
     onPointerUp,
     onWheelZoom,
     gesture: gestureRef.current,
   };
-}
-
-
-/** The return value of `usePanZoom` */
-export interface IResult {
-  onPointerDown: (
-    pointerId: number,
-    pos: {x: number; y: number},
-  ) => void;
-
-  onPointerMove: (
-    pointerId: number,
-    pos: {x: number; y: number},
-  ) => void;
-
-  onPointerUp: (
-    pointerId: number,
-  ) => void;
-
-  onWheelZoom: (opts: {
-    center: {x: number; y: number};
-    zoomRatio: number;
-  }) => void;
-
-  gesture: IGesture;
 }

@@ -13,15 +13,15 @@ export type IRange = readonly [
 ];
 
 
-export interface IScale <TDomain = number> {
+export interface IScale <TDomain extends number = number> {
   (domainVal: TDomain): number;
   domain: {
     (): TDomain[];
     (newDomain: TDomain[]): void;
   };
   range: {
+    // eslint-disable-next-line @typescript-eslint/prefer-function-type
     (): number[];
-    (newRange: number[]): void;
   };
   invert: (rangeValue: number) => TDomain;
   copy: () => IScale<TDomain>;

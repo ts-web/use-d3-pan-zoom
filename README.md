@@ -1,3 +1,6 @@
+[![npm version](https://img.shields.io/npm/v/use-d3-pan-zoom.svg)](https://www.npmjs.com/package/use-d3-pan-zoom)
+[![Downloads](https://img.shields.io/npm/dm/use-d3-pan-zoom.svg)](https://www.npmjs.com/package/use-d3-pan-zoom)
+
 # use-d3-pan-zoom
 
 A React hook replacement for `d3-zoom`.

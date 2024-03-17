@@ -1,3 +1,6 @@
+# 1.0.3
+Improve readme.
+
 # 1.0.2
 Fix a bug where if you put down another pointer outside of the chart while a gesture is active, it would corrupt the gesture.
 

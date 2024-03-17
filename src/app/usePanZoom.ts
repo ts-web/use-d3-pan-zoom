@@ -184,6 +184,8 @@ export function usePanZoom ({
       ) => {
         const gesture = gestureRef.current;
         if (!gesture.inProgress) return;
+        // Ignore moves that originated outside of the element (they had no pointerdown event).
+        if (!gesture.pointerPositions.has(pointerId)) return;
         const _commitGesture = commitGestureRef.current;
         const _scheduleUpdate = scheduleUpdateRef.current;
 

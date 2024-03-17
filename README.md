@@ -1,10 +1,23 @@
 # use-d3-pan-zoom
 
-`usePanZoom` — a React hook for doing pan and zoom pointer interactions on an element, so that
-when the user interacts with your UI element, it translates those gestures into changes to 
-an x and y scale (d3-style scales).
+A React hook replacement for `d3-zoom`.
 
-Supports multi-touch user interactions and non-linear scales.
+`usePanZoom` attaches to a "chart" DOM element (e.g. a SVG element),
+transforming user interactions (mouse, touch, wheel) to mutations to a given pair of X and Y d3 scales.
+User gestures modify the domains of these scales.
+
+### Features
+- Supports multi-touch interactions (e.g. 2+ fingers).
+- Unbounded interactions (a panning gesture can continue beyond the edge of the chart and even the window).
+- Full d3 scale support. Properly handles both linear and non-linear scales (e.g. `scalePow`).
+- Lock X or Y axis.
+- Full UI customizability.
+
+### Limitations
+- No support yet for preserving the aspect ratio (PRs welcome).
+- No support yet for the mobile "double tap to zoom" interaction or "long press to zoom out" (PRs welcome).
+- Rotation gestures are not supported. This library is meant for 2D xy charts where rotation is not used.
+- Not very good support for minExtent/maxExtent constraints, or customizing the constraint method (contain vs cover), or elasticity.
 
 
 ## Scales

@@ -9,7 +9,7 @@ import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'PanZoom/Min Zoom, Max Zoom',
+  title: 'Min Zoom, Max Zoom',
 };
 
 

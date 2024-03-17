@@ -9,7 +9,7 @@ import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'PanZoom/X Axis animated domain',
+  title: 'X Axis animated domain',
 };
 
 

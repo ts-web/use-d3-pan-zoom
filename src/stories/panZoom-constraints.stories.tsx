@@ -9,7 +9,7 @@ import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'PanZoom/Constraint',
+  title: 'Constraint',
 };
 
 

@@ -9,7 +9,7 @@ import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'PanZoom/Show Gesture',
+  title: 'Show Gesture',
 };
 
 

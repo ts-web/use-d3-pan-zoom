@@ -8,7 +8,7 @@ import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'PanZoom/X Axis',
+  title: 'X Axis',
 };
 
 

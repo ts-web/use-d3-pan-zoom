@@ -13,11 +13,11 @@ User gestures modify the domains of these scales.
 - Supports multi-touch interactions (e.g. 2+ fingers).
 - Unbounded interactions (a panning gesture can continue beyond the edge of the chart and even the window).
 - Full d3 scale support. Properly handles both linear and non-linear scales (e.g. `scalePow`).
-- Lock X or Y axis.
+- Optionally preserve zoom aspect ratio, or allow independent scale manipulation.
+- Optionally lock the X or Y axis.
 - Full UI customizability.
 
 ### Limitations
-- No support yet for preserving the aspect ratio (PRs welcome).
 - No support yet for the mobile "double tap to zoom" interaction or "long press to zoom out" (PRs welcome).
 - Rotation gestures are not supported. This library is meant for 2D xy charts where rotation is not used.
 - Not very good support for minExtent/maxExtent constraints, or customizing the constraint method (contain vs cover), or elasticity.

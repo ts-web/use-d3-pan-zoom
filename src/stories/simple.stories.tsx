@@ -78,6 +78,7 @@ export function Story () {
   } = usePanZoom({
     xScale,
     yScale,
+    preserveAspectRatio: true,
     onUpdate: () => {
       bumpRev();
     },

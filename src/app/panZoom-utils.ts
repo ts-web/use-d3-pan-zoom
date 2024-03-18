@@ -13,6 +13,7 @@ export function updateScales({
   initialGestureBBox,
   currentGestureBBox,
   constraint,
+  preserveAspectRatio,
   minZoom: {
     xSpan: minXSpan,
     ySpan: minYSpan,
@@ -30,18 +31,21 @@ export function updateScales({
   initialGestureBBox: IBBox;
   currentGestureBBox: IBBox;
   constraint: Partial<IBBox> | undefined;
+  preserveAspectRatio: boolean | undefined;
   minZoom: {xSpan?: number; ySpan?: number} | undefined;
   maxZoom: {xSpan?: number; ySpan?: number} | undefined;
   singleAxis: IGesture['singleAxis'];
 }): void {
-  const {xk, xt, yk, yt} = calcKTs(initialGestureBBox, currentGestureBBox);
+  const squareInitialGestureBbox = preserveAspectRatio ? squareify(initialGestureBBox) : initialGestureBBox;
+  const squareCurrentGestureBBox = preserveAspectRatio ? squareify(currentGestureBBox) : currentGestureBBox;
+
+  const {xk, xt, yk, yt} = calcKTs(squareInitialGestureBbox, squareCurrentGestureBBox);
 
   const rangeOfNewXDomain = applyKTInverse(xScale.range(), xk, xt);
   const rangeOfNewYDomain = applyKTInverse(yScale.range(), yk, yt);
 
   const newXDomain = rangeOfNewXDomain.map((xRangeVal) => initialXScale.invert(xRangeVal)) as [number, number];
   const newYDomain = rangeOfNewYDomain.map((yRangeVal) => initialYScale.invert(yRangeVal)) as [number, number];
-
 
   const newXDomainClamped = increaseToSpan(minXSpan, decreaseToSpan(maxXSpan, newXDomain));
   const newYDomainClamped = increaseToSpan(minYSpan, decreaseToSpan(maxYSpan, newYDomain));
@@ -463,3 +467,24 @@ export function decreaseToSpan (
   return [d0 + diffHalf, d1 - diffHalf];
 }
 
+
+function squareify (
+  bbox: IBBox,
+): IBBox {
+  const isHoriz = bbox.xWidth > bbox.yHeight;
+  const sideExtra = Math.abs(bbox.xWidth - bbox.yHeight);
+  const sideExtraHalf = sideExtra / 2;
+  if (isHoriz) {
+    return {
+      ...bbox,
+      yMax: bbox.yMax + sideExtraHalf,
+      yMin: bbox.yMin - sideExtraHalf,
+    };
+  } else {
+    return {
+      ...bbox,
+      xMax: bbox.xMax + sideExtraHalf,
+      xMin: bbox.xMin - sideExtraHalf,
+    };
+  }
+}

@@ -38,6 +38,7 @@ export interface IGesture {
     y: number;
   }>;
   constraint?: Partial<IBBox>;
+  preserveAspectRatio?: boolean;
   minZoom?: {xSpan?: number; ySpan?: number};
   maxZoom?: {xSpan?: number; ySpan?: number};
   singleAxis?: 'x' | 'y';

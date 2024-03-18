@@ -48,6 +48,7 @@ export function usePanZoom ({
   yScale,
   onUpdate,
   constrain,
+  preserveAspectRatio,
   minZoom,
   maxZoom,
   registerMoveListener,
@@ -56,6 +57,7 @@ export function usePanZoom ({
   yScale: IScale;
   onUpdate?: () => void;
   constrain?: Partial<IBBox>;
+  preserveAspectRatio?: boolean;
   minZoom?: {xSpan?: number; ySpan?: number};
   maxZoom?: {xSpan?: number; ySpan?: number};
   /**
@@ -86,11 +88,13 @@ export function usePanZoom ({
     currentGestureBBox: {xMin: 0, xMax: 0, yMin: 0, yMax: 0, xWidth: 0, yHeight: 0}, // dummy default
     pointerPositions: new Map(),
     constraint: constrain,
+    preserveAspectRatio,
     minZoom,
     maxZoom,
   });
 
   gestureRef.current.constraint = constrain;
+  gestureRef.current.preserveAspectRatio = preserveAspectRatio;
   gestureRef.current.minZoom = minZoom;
   gestureRef.current.maxZoom = maxZoom;
 
@@ -117,6 +121,7 @@ export function usePanZoom ({
       initialGestureBBox: gesture.initialGestureBBox,
       currentGestureBBox: gesture.currentGestureBBox,
       constraint: gesture.constraint,
+      preserveAspectRatio: gesture.preserveAspectRatio,
       minZoom: gesture.minZoom,
       maxZoom: gesture.maxZoom,
       singleAxis: gesture.singleAxis,
@@ -138,13 +143,15 @@ export function usePanZoom ({
       const bothAreNarrow = (isXNarrow && isYNarrow);
       const predominantlyX = (bbox.xWidth / bbox.yHeight > 1.2);
       const predominantlyY = (bbox.xWidth / bbox.yHeight < 0.8);
-      gesture.singleAxis = (bothAreNarrow) ?
-        (predominantlyY) ? 'y' : (predominantlyX) ? 'x' : undefined :
-        (isXNarrow) ?
-          'y' :
-          isYNarrow ?
-            'x':
-            undefined
+      gesture.singleAxis = gesture.preserveAspectRatio ?
+        undefined :
+        (bothAreNarrow) ?
+          (predominantlyY) ? 'y' : (predominantlyX) ? 'x' : undefined :
+          (isXNarrow) ?
+            'y' :
+            isYNarrow ?
+              'x':
+              undefined
       ;
     }
     gesture.initialGestureBBox = bbox;

@@ -1,3 +1,6 @@
+# 1.0.4
+- Republish
+
 # 1.0.3
 Improve readme.
 

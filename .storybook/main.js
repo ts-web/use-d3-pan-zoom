@@ -32,6 +32,10 @@ module.exports = {
       configFile: './src/stories/tsconfig.json',
     }));
 
+    config.module.rules.push(
+      {test: /\.csv$/, loader: 'raw-loader'},
+    );
+
     return config;
   },
 };

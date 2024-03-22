@@ -69,6 +69,7 @@ export function ZoomableAreaChart () {
     _xScale.range([marginLeft, width - marginRight]);
     return _xScale;
   }, []);
+  const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
@@ -78,6 +79,16 @@ export function ZoomableAreaChart () {
   }, []);
 
   const [rev, bumpRev] = useRev();
+
+  useEffect(() => {
+    // I don't have a library to do the same animation. This is the end state.
+    xScaleRef.current.domain([
+      new Date('1998-04-02T00:00:00.000Z'),
+      new Date('2003-07-02T11:59:59.999Z'),
+    ]);
+    bumpRev();
+  }, [bumpRev]);
+
   const {
     onPointerDown,
     onPointerUp,

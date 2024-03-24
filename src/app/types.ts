@@ -37,11 +37,13 @@ export interface IGesture {
     x: number;
     y: number;
   }>;
-  constraint?: Partial<IBBox>;
+  constraint: Partial<IBBox> | undefined;
+  lockXAxis: boolean;
+  lockYAxis: boolean;
   preserveAspectRatio?: boolean;
-  minZoom?: {xSpan?: number; ySpan?: number};
-  maxZoom?: {xSpan?: number; ySpan?: number};
-  singleAxis?: 'x' | 'y';
+  minZoom: {xSpan?: number; ySpan?: number} | undefined;
+  maxZoom: {xSpan?: number; ySpan?: number} | undefined;
+  singleAxis: 'x' | 'y' | undefined;
 }
 
 export interface IBBox {

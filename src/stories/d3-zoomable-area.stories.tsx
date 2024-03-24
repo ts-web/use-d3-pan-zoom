@@ -97,6 +97,7 @@ export function ZoomableAreaChart () {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     xScale: xScale as any,
     yScale,
+    lockYAxis: true,
     onUpdate: () => {
       bumpRev();
     },

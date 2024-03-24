@@ -13,6 +13,8 @@ export function updateScales({
   initialGestureBBox,
   currentGestureBBox,
   constraint,
+  lockXAxis,
+  lockYAxis,
   preserveAspectRatio,
   minZoom: {
     xSpan: minXSpan,
@@ -31,6 +33,8 @@ export function updateScales({
   initialGestureBBox: IBBox;
   currentGestureBBox: IBBox;
   constraint: Partial<IBBox> | undefined;
+  lockXAxis: boolean;
+  lockYAxis: boolean;
   preserveAspectRatio: boolean | undefined;
   minZoom: {xSpan?: number; ySpan?: number} | undefined;
   maxZoom: {xSpan?: number; ySpan?: number} | undefined;
@@ -58,10 +62,14 @@ export function updateScales({
     yScale,
   });
 
-  if (!singleAxis || singleAxis === 'x') {
+  if (lockXAxis && lockYAxis) return;
+
+  // Update the x scale.
+  // The X scale should be update if the predominant gesture axis is X, or if there is no predominant gesture axis.
+  if (!lockXAxis && (!singleAxis || singleAxis === 'x')) {
     xScale.domain(newXDomainClamped);
   }
-  if (!singleAxis || singleAxis === 'y') {
+  if (!lockYAxis && (!singleAxis || singleAxis === 'y')) {
     yScale.domain(newYDomainClamped);
   }
 }
@@ -72,6 +80,8 @@ export function zoom ({
   center,
   zoomRatio,
   constraint,
+  lockXAxis,
+  lockYAxis,
   minZoom: {
     xSpan: minXSpan,
     ySpan: minYSpan,
@@ -86,6 +96,8 @@ export function zoom ({
   center: {x: number; y: number};
   zoomRatio: number;
   constraint: Parameters<typeof constrain>[0]['constraint'];
+  lockXAxis: boolean;
+  lockYAxis: boolean;
   minZoom: {xSpan?: number; ySpan?: number} | undefined;
   maxZoom: {xSpan?: number; ySpan?: number} | undefined;
 }) {
@@ -109,22 +121,25 @@ export function zoom ({
   const previousXDomain = xScale.domain() as [number, number];
   const previousYDomain = yScale.domain() as [number, number];
 
-  const newXDomain = [newXRangeStart, newXRangeEnd].map((rangeVal) => xScale.invert(rangeVal)) as [number, number];
-  const newYDomain = [newYRangeEnd, newYRangeStart].map((rangeVal) => yScale.invert(rangeVal)) as [number, number];
+  let newXDomain = [newXRangeStart, newXRangeEnd].map((rangeVal) => xScale.invert(rangeVal)) as [number, number];
+  let newYDomain = [newYRangeEnd, newYRangeStart].map((rangeVal) => yScale.invert(rangeVal)) as [number, number];
 
-  const newXDomainClamped = clampToMaxSpan(maxXSpan, previousXDomain, clampToMinSpan(minXSpan, previousXDomain, newXDomain));
-  const newYDomainClamped = clampToMaxSpan(maxYSpan, previousYDomain, clampToMinSpan(minYSpan, previousYDomain, newYDomain));
+  newXDomain = clampToMaxSpan(maxXSpan, previousXDomain, clampToMinSpan(minXSpan, previousXDomain, newXDomain));
+  newYDomain = clampToMaxSpan(maxYSpan, previousYDomain, clampToMinSpan(minYSpan, previousYDomain, newYDomain));
+
+  if (lockXAxis) newXDomain = previousXDomain;
+  if (lockYAxis) newYDomain = previousYDomain;
 
   constrain({
-    xDomain: newXDomainClamped,
-    yDomain: newYDomainClamped,
+    xDomain: newXDomain,
+    yDomain: newYDomain,
     constraint,
     xScale,
     yScale,
   });
 
-  xScale.domain(newXDomainClamped);
-  yScale.domain(newYDomainClamped);
+  xScale.domain(newXDomain);
+  yScale.domain(newYDomain);
 }
 
 export function constrain ({

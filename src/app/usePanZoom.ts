@@ -49,6 +49,8 @@ export function usePanZoom ({
   onUpdate,
   constrain,
   preserveAspectRatio,
+  lockXAxis = false,
+  lockYAxis = false,
   minZoom,
   maxZoom,
   registerMoveListener,
@@ -58,6 +60,8 @@ export function usePanZoom ({
   onUpdate?: () => void;
   constrain?: Partial<IBBox>;
   preserveAspectRatio?: boolean;
+  lockXAxis?: boolean;
+  lockYAxis?: boolean;
   minZoom?: {xSpan?: number; ySpan?: number};
   maxZoom?: {xSpan?: number; ySpan?: number};
   /**
@@ -88,9 +92,12 @@ export function usePanZoom ({
     currentGestureBBox: {xMin: 0, xMax: 0, yMin: 0, yMax: 0, xWidth: 0, yHeight: 0}, // dummy default
     pointerPositions: new Map(),
     constraint: constrain,
+    lockXAxis,
+    lockYAxis,
     preserveAspectRatio,
     minZoom,
     maxZoom,
+    singleAxis: undefined,
   });
 
   gestureRef.current.constraint = constrain;
@@ -121,6 +128,8 @@ export function usePanZoom ({
       initialGestureBBox: gesture.initialGestureBBox,
       currentGestureBBox: gesture.currentGestureBBox,
       constraint: gesture.constraint,
+      lockXAxis: gesture.lockXAxis,
+      lockYAxis: gesture.lockYAxis,
       preserveAspectRatio: gesture.preserveAspectRatio,
       minZoom: gesture.minZoom,
       maxZoom: gesture.maxZoom,
@@ -256,6 +265,8 @@ export function usePanZoom ({
       center,
       zoomRatio,
       constraint: _gesture.constraint,
+      lockXAxis: _gesture.lockXAxis,
+      lockYAxis: _gesture.lockYAxis,
       minZoom: _gesture.minZoom,
       maxZoom: _gesture.maxZoom,
     });

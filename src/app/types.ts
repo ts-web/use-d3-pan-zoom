@@ -13,7 +13,7 @@ export type IRange = readonly [
 ];
 
 
-export interface IScale <TDomain extends number = number> {
+export interface IScale <TDomain extends number | Date = number | Date> {
   (domainVal: TDomain): number;
   domain: {
     (): TDomain[];

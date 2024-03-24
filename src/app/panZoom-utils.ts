@@ -178,56 +178,56 @@ export function constrain ({
   if (newRangeWidth >= rangeConstraintWidth) {
     // In this case, the new domain is larger than the constraint width, whether it's actually out
     // on both sides or not (doesn't matter). We can just clamp both edges to the constraint.
-    xDomain[0] = xScale.invert(xMin);
-    xDomain[1] = xScale.invert(xMax);
+    xDomain[0] = Number(xScale.invert(xMin));
+    xDomain[1] = Number(xScale.invert(xMax));
   } else if (newRangeWidth !== prevXRangeWidth) {
     // The zooming case
     // When zooming at the edge, the zoom target will shift.
     if (leftIsOut) {
-      xDomain[0] = xScale.invert(xMin);
-      xDomain[1] = xScale.invert(xMin + newRangeWidth);
+      xDomain[0] = Number(xScale.invert(xMin));
+      xDomain[1] = Number(xScale.invert(xMin + newRangeWidth));
     }
     if (rightIsOut) {
-      xDomain[0] = xScale.invert(xMax - newRangeWidth);
-      xDomain[1] = xScale.invert(xMax);
+      xDomain[0] = Number(xScale.invert(xMax - newRangeWidth));
+      xDomain[1] = Number(xScale.invert(xMax));
     }
   } else {
     // Otherwise, the new domain is smaller than the constraint. Since it's smaller, it cannot be out on both sides at once.
     // We preserve the previous width for pans but not for zooms.
     if (leftIsOut) {
-      xDomain[0] = xScale.invert(xMin);
-      xDomain[1] = xScale.invert(xMin + prevXRangeWidth);
+      xDomain[0] = Number(xScale.invert(xMin));
+      xDomain[1] = Number(xScale.invert(xMin + prevXRangeWidth));
     }
     if (rightIsOut) {
-      xDomain[0] = xScale.invert(xMax - prevXRangeWidth);
-      xDomain[1] = xScale.invert(xMax);
+      xDomain[0] = Number(xScale.invert(xMax - prevXRangeWidth));
+      xDomain[1] = Number(xScale.invert(xMax));
     }
   }
   // Again for the Y axis
   if (newRangeHeight >= rangeConstraintHeight) {
-    yDomain[1] = yScale.invert(yMin);
-    yDomain[0] = yScale.invert(yMax);
+    yDomain[1] = Number(yScale.invert(yMin));
+    yDomain[0] = Number(yScale.invert(yMax));
   } else if (newRangeHeight !== prevYRangeHeight) {
     // The zooming case
     // When zooming at the edge, the zoom target will shift.
     if (topIsOut) {
-      yDomain[1] = yScale.invert(yMin);
-      yDomain[0] = yScale.invert(yMin + newRangeHeight);
+      yDomain[1] = Number(yScale.invert(yMin));
+      yDomain[0] = Number(yScale.invert(yMin + newRangeHeight));
     }
     if (bottomIsOut) {
-      yDomain[1] = yScale.invert(yMax - newRangeHeight);
-      yDomain[0] = yScale.invert(yMax);
+      yDomain[1] = Number(yScale.invert(yMax - newRangeHeight));
+      yDomain[0] = Number(yScale.invert(yMax));
     }
   } else {
     // Otherwise, the new domain is smaller than the constraint. Since it's smaller, it cannot be out on both sides at once.
     // We preserve the previous width for pans but not for zooms.
     if (topIsOut) {
-      yDomain[1] = yScale.invert(yMin);
-      yDomain[0] = yScale.invert(yMin + prevYRangeHeight);
+      yDomain[1] = Number(yScale.invert(yMin));
+      yDomain[0] = Number(yScale.invert(yMin + prevYRangeHeight));
     }
     if (bottomIsOut) {
-      yDomain[1] = yScale.invert(yMax - prevYRangeHeight);
-      yDomain[0] = yScale.invert(yMax);
+      yDomain[1] = Number(yScale.invert(yMax - prevYRangeHeight));
+      yDomain[0] = Number(yScale.invert(yMax));
     }
   }
 }

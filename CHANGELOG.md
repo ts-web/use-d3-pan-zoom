@@ -1,3 +1,8 @@
+# 1.1.0
+- Now exports `useTransform` which can be used to transform groups of elements.
+- `usePanZoom` now accepts two new optional boolean options: `lockXAxis` and `lockYAxis`. 
+- Improve typescript support for Date scales. `IScale` domain can now extend `Date`.
+
 # 1.0.4
 - Republish
 

@@ -1,6 +1,6 @@
 {
   "name": "use-d3-pan-zoom",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "author": "https://github.com/ts-web/",
   "license": "ISC",
   "description": "A headless hook for translating mouse/touch/pointer events to pan/zoom interactions. This is an adaptation of d3-zoom to React",

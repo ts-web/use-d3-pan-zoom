@@ -1,3 +1,6 @@
+# 1.1.1
+- Fix publish.
+
 # 1.1.0
 - Now exports `useTransform` which can be used to transform groups of elements.
 - `usePanZoom` now accepts two new optional boolean options: `lockXAxis` and `lockYAxis`. 

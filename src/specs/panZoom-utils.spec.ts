@@ -125,6 +125,8 @@ describe('updateScales', () => {
         yHeight: 1,
       },
       constraint: undefined,
+      lockXAxis: false,
+      lockYAxis: false,
       preserveAspectRatio: false,
       minZoom: undefined,
       maxZoom: undefined,

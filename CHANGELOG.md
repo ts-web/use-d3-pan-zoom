@@ -1,3 +1,6 @@
+# 1.1.2
+- `registerMoveListener` is now optional, for advanced use cases.
+
 # 1.1.1
 - Fix publish.
 

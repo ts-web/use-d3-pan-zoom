@@ -70,7 +70,7 @@ export function usePanZoom ({
    * This way, pointer move events are ignored unless the chart is actually being interacted with.
    * This is important, because the pointer move listener must be attached on the entire document (for freedom of movement).
    */
-  registerMoveListener: (
+  registerMoveListener?: (
     /**
      * Call `onPointerMove` for every move of every pointer, passing the pointer position relative to the view element.
      */
@@ -210,7 +210,7 @@ export function usePanZoom ({
         _commitGesture(gesture);
         _scheduleUpdate();
       };
-      removeMoveListenerRef.current = registerMoveListenerRef.current(onPointerMove);
+      removeMoveListenerRef.current = registerMoveListenerRef.current?.(onPointerMove);
     } else {
       // Case: second or Nth pointer pressed down.
       // Commit the current gesture and start a new one.

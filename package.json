@@ -79,5 +79,8 @@
     "tween-functions-ts": "^1",
     "typescript": "^5",
     "use-rev": "^1"
-  }
+  },
+  "files": [
+    "lib"
+  ]
 }

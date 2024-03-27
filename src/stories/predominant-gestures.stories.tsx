@@ -1,27 +1,19 @@
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRev } from 'use-rev';
-import { Axis } from 'react-d3-axis-ts';
 
-import { normalizeWheelDelta, usePanZoom, type IBBox } from '~';
-
-
-import imageFile from './taylor-kopel-JNm1dAElVtE-unsplash-min.jpg';
+import { normalizeWheelDelta } from '~/panZoom-utils';
+import type { IBBox } from '~/types';
+import { usePanZoom } from '~/usePanZoom';
 
 
 export default {
-  title: 'Simple',
+  title: 'Gestures',
 };
 
-const chartWidth = 800;
-const chartHeight = 600;
-const yDomain = 1000;
-const xDomain = yDomain * (chartWidth / chartHeight);
 
-const imageX = 450;
-const imageY = 200;
-const imageWidth = 400;
-const imageHeight = 600;
+const chartWidth = 1000;
+const chartHeight = 600;
 
 
 export function Story () {
@@ -57,19 +49,19 @@ export function Story () {
 
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
-    _xScale.domain([0, xDomain]);
+    _xScale.domain([0, 100]);
     _xScale.range([0, chartWidth]);
     return _xScale;
   }, []);
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([0, yDomain]);
+    _yScale.domain([0, 100 * (chartHeight / chartWidth)]);
     _yScale.range([chartHeight, 0]);
     return _yScale;
   }, []);
 
-  const [rev, bumpRev] = useRev();
+  const [, bumpRev] = useRev();
   const {
     onPointerDown,
     onPointerUp,
@@ -78,7 +70,6 @@ export function Story () {
   } = usePanZoom({
     xScale,
     yScale,
-    preserveAspectRatio: true,
     onUpdate: () => {
       bumpRev();
     },
@@ -116,15 +107,25 @@ export function Story () {
   }, [chartElement]);
 
   return (
-    <div style={{
-      width: chartWidth,
-      height: chartHeight,
-      border: '1px solid #666',
-      position: 'relative',
-    }}>
+    <div>
+      <p>
+        Touch interactions may be detected as <b>single-axis gestures</b> (resizing horizontally only, or vertically only).
+        This happens when the pointers have negligible offset in a certain axis. When that happens, the gesture becomes single-axis for the duration of the gesture.
+      </p>
+      <p>
+        This is an important affordance in a gesture library. In these cases where the pointers are very close together in a given axis, any change in that distance will cause unexpected resizing. So a gesture library should detect this condition and disable the non-dominant axis.
+      </p>
+      <p>
+        Example: when the user is doing a vertical expand gesture, the pointers are vertically in line, and there may be 1px of horizontal distance between them. If that distance becomes 2px, that's a 200% increase in the horizontal direction. But we certainly should not grow the chart by 200% in the x axis during a vertical gesture!
+      </p>
+      <p>
+        In the chart below, use two fingers to do a vertical zoom, and then do a horizontal zoom. Arrows will appear indicating whether it's a vertical or horizontal gesture, or both.
+      </p>
       <div style={{
-        position: 'absolute',
-        inset: 0,
+        width: chartWidth,
+        height: chartHeight,
+        border: '1px solid #666',
+        position: 'relative',
       }}>
         <svg
           ref={setChartElement}
@@ -182,60 +183,57 @@ export function Story () {
             height={chartHeight}
             fill="whitesmoke"
           />
-          <g transform={`translate(${chartWidth}, 0)`}>
-            <Axis
-              orient="left"
-              scale={yScale}
-              tickArguments={[10]}
-              color="#f99"
-              tickSizeInner={chartWidth - 40}
-              tickSizeOuter={chartWidth - 40}
-              scaleRev={rev}
-            />
-          </g>
-          <g transform={`translate(0, ${chartHeight})`}>
-            <Axis
-              orient="top"
-              scale={xScale}
-              tickArguments={[10]}
-              color="#99f"
-              tickSizeInner={chartHeight - 40}
-              tickSizeOuter={chartHeight - 40}
-              scaleRev={rev}
-            />
-          </g>
-          <rect
-            fill='red'
-            x={xScale(imageX)}
-            y={yScale(imageY + imageHeight)}
-            width={xScale(imageX + imageWidth) - xScale(imageX)}
-            height={yScale(imageY) - yScale(imageY + imageHeight)}
-          />
-          <image
-            href={imageFile}
-            x={xScale(imageX)}
-            y={yScale(imageY + imageHeight)}
-            width={xScale(imageX + imageWidth) - xScale(imageX)}
-            height={yScale(imageY) - yScale(imageY + imageHeight)}
-            preserveAspectRatio="none"
-          />
-          <circle fill="gold" r={40}
-            cx={xScale(imageX + 60)}
-            cy={yScale(imageY + 500)}
-          />
-
-          {/* eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition */}
-          {false && gesture.inProgress ? <>
+          {gesture.inProgress ? <>
             <Pointers
               pointers={gesture.pointerPositions}
               edge={gesture.currentGestureBBox}
             />
           </> : null}
+          <circle
+            cx={xScale(20)}
+            cy={yScale(20)}
+            r={25}
+            fill='limegreen'
+          />
+          <circle
+            cx={xScale(20)}
+            cy={yScale(40)}
+            r={25}
+            fill='limegreen'
+          />
+          <circle
+            cx={xScale(40)}
+            cy={yScale(40)}
+            r={25}
+            fill='limegreen'
+          />
+          <circle
+            cx={xScale(40)}
+            cy={yScale(20)}
+            r={25}
+            fill='limegreen'
+          />
+
+          {gesture.inProgress && !gesture.singleAxis || gesture.singleAxis === 'x' ? (
+            <g transform={`translate(150, 500)`}>
+              <path d="M0 15L25 29.4338V0.566243L0 15ZM239 15L214 0.566243V29.4338L239 15ZM22.5 17.5H216.5V12.5H22.5V17.5Z" fill="black"/>
+            </g>
+          ) : undefined}
+
+          {gesture.inProgress && !gesture.singleAxis || gesture.singleAxis === 'y' ? (
+            <g transform={`translate(100, 250)`}>
+              <path d="M14.5 0.5L0.066246 25.5L28.9338 25.5L14.5 0.5ZM14.5 239.5L28.9338 214.5L0.0662377 214.5L14.5 239.5ZM12 23L12 217L17 217L17 23L12 23Z" fill="black"/>
+            </g>
+          ) : undefined}
+
         </svg>
       </div>
     </div>
   );
 }
+Story.storyName = 'Predominant Gesture Detection'
+
+
 
 
 function Pointers ({

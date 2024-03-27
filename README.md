@@ -3,11 +3,43 @@
 
 # use-d3-pan-zoom
 
-A React hook replacement for `d3-zoom`.
+`usePanZoom` is a low-level react hook for enabling interactive charts that use d3 scales.
 
-`usePanZoom` attaches to a "chart" DOM element (e.g. a SVG element),
-transforming user interactions (mouse, touch, wheel) to mutations to a given pair of X and Y d3 scales.
-User gestures modify the domains of these scales.
+Provides primitives for transforming user interactions (mouse, touch, wheel) into mutations of a given set of d3 scales (for the X and Y axes).
+
+### Interactions
+
+Free and unconstrained pan/zoom manipulation.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/dc49a0a2-a5ca-4225-afa8-6eb62269ce05
+
+
+Preserving aspect ratio.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/509a2218-27b5-4d31-aec2-f04bb1da9717
+
+
+Locked axes.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/532ab614-db7d-4d04-8560-3252f48b46b2
+
+
+Smart detection of predominant gestures.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/98f242dd-1962-42da-ab8e-9c88d555b7c7
+
+
+Transforming grouped elements.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/50ebfa25-2d44-4c3a-9c11-a6dd27407416
+
+
+Out-of-bounds manipulation.
+
+https://github.com/ts-web/use-d3-pan-zoom/assets/1311744/cfe67d07-25cb-4e72-86fa-cdffd5f0b811
+
+
+
 
 ### Features
 - Supports multi-touch interactions (e.g. 2+ fingers).
@@ -19,6 +51,7 @@ User gestures modify the domains of these scales.
 
 ### Limitations
 - No support yet for the mobile "double tap to zoom" interaction or "long press to zoom out" (PRs welcome).
+- No support yet for inertia (PRs welcome).
 - Rotation gestures are not supported. This library is meant for 2D xy charts where rotation is not used.
 - Not very good support for minExtent/maxExtent constraints, or customizing the constraint method (contain vs cover), or elasticity.
 

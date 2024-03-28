@@ -90,7 +90,7 @@ One or more _pointers_ define a bbox in pixel space. When a new pointer is added
 
 
 
-## Usage
+## Using `usePanZoom`
 This is a "headless component" — a hook that gives you the tools to build your own UI component.
 
 Here is a standard example:
@@ -242,7 +242,7 @@ export function MyChart () {
           });
         }}
       >
-        <circle fill="orange" r={20}
+        <circle fill='orange' r={20}
           cx={xScale(pointDomainX)}
           cy={yScale(pointDomainY)}
         />
@@ -253,4 +253,59 @@ export function MyChart () {
 ```
 
 
+# Using `useTransform`
 
+The `useTransform` hook allows you to transform a `g` group element with `transform()` and `scale()`.
+This is useful when you have a complex drawing with many points and you don't want to scale each point individually.
+It also may be more performant.
+
+However, be aware that this type of transformation scales the whole drawing, instead of just repositioning the points.
+This can result in undesired stretching, so `preserveAspectRatio` is typically used with this.
+
+See [this useTransform story](https://ts-web.github.io/use-d3-pan-zoom/?path=/story/usetransform--story) to see an example of scaling and skewing without `preserveAspectRatio`.
+
+`useTransform` requires an "initial scale" in order to calculate the transform relative to the initial position.
+
+```tsx
+import { useTransform, ... } from 'use-d3-pan-zoom';
+import { useRev } from 'use-rev';
+
+...
+
+export function MyChart () {
+  
+  ...
+
+  const [scaleRev, bumpRev] = useRev();
+  const { ... } = usePanZoom({
+    ...
+    onUpdate: () => {
+      bumpRev();
+    },
+  });
+
+  const {x, y, kx, ky} = useTransform({
+    initialXScale,
+    initialYScale,
+    xScale,
+    yScale,
+    scaleRev,
+  });
+
+
+  return (
+    <svg ... >
+      <g transform={`translate(${x}, ${y}) scale(${kx}, ${ky})`}>
+        <circle fill='orange' r={20}
+          cx={150}
+          cy={100}
+        />
+      </g>
+    </svg>
+  );
+}
+```
+
+`scaleRev` is a value that changes when the scales change (since the scales themselves are not immutable).  
+
+Inside the group, coordinates are view pixel values indicating initial view positions.

@@ -262,6 +262,14 @@ export function Story () {
               fill='tomato'
             />
 
+            <g transform={`translate(${xScale(85)}, ${yScale(43)}) scale(0.5)`}>
+              <image
+                href={imageFile}
+                x={0}
+                y={0}
+              />
+            </g>
+
 
             {gesture.inProgress ? <>
               <Pointers

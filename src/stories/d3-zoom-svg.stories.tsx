@@ -76,8 +76,7 @@ export function ZoomSVG () {
     onPointerUp,
     onWheelZoom,
   } = usePanZoom({
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-    xScale: xScale as any,
+    xScale,
     yScale,
     preserveAspectRatio: true,
     onUpdate: () => {

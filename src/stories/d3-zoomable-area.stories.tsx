@@ -18,6 +18,8 @@ interface IDatum {
   value: number;
 }
 const data = csvParse(csv, autoType) as IDatum[];
+const dataMax = max(data, d => d.value)!;
+const dataExtent = extent<IDatum, Date>(data, d => d.date) as [Date, Date];
 
 
 export default {
@@ -31,6 +33,7 @@ const marginTop = 20;
 const marginRight = 20;
 const marginBottom = 30;
 const marginLeft = 30;
+const oneYear = 3.156e+10;
 
 export function ZoomableAreaChart () {
   const [chartElement, setChartElement] = useState<Element | null>();
@@ -65,7 +68,7 @@ export function ZoomableAreaChart () {
 
   const xScale = useMemo(() => {
     const _xScale = scaleUtc();
-    _xScale.domain(extent<IDatum, Date>(data, d => d.date) as [Date, Date]);
+    _xScale.domain(dataExtent);
     _xScale.range([marginLeft, width - marginRight]);
     return _xScale;
   }, []);
@@ -73,7 +76,7 @@ export function ZoomableAreaChart () {
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([0, max(data, d => d.value)!]).nice();
+    _yScale.domain([0, dataMax]).nice();
     _yScale.range([height - marginBottom, marginTop]);
     return _yScale;
   }, []);
@@ -94,9 +97,15 @@ export function ZoomableAreaChart () {
     onPointerUp,
     onWheelZoom,
   } = usePanZoom({
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-    xScale: xScale as any,
+    xScale,
     yScale,
+    constrain: {
+      xMin: Number(dataExtent[0]),
+      xMax: Number(dataExtent[1]),
+      yMin: -Infinity,
+      yMax: Infinity,
+    },
+    minZoom: {xSpan: oneYear / 2},
     lockYAxis: true,
     onUpdate: () => {
       bumpRev();
@@ -243,6 +252,17 @@ export function ZoomableAreaChart () {
           </svg>
         </div>
       </div>
+      <p>
+        Demonstrates:
+      </p>
+      <ul>
+        <li>Extent constraints</li>
+        <li>Min zoom range</li>
+        <li>Y axis locking</li>
+        <li>d3-area</li>
+        <li>clipping</li>
+        <li>Date X scale</li>
+      </ul>
     </div>
   );
 }

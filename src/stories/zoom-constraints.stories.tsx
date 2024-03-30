@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom, type IScale } from '~';
+
 
 
 export default {
-  title: 'X and Y Axis',
+  title: 'usePanZoom',
 };
 
 
@@ -16,7 +16,7 @@ const chartWidth = 1000;
 const chartHeight = 600;
 
 
-export function Story () {
+export function Story_ZoomConstraints () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -48,7 +48,6 @@ export function Story () {
   }
 
   const xScale = useMemo(() => {
-    // const _xScale = scaleLinear();
     const _xScale = scalePow();
     _xScale.exponent(2);
     _xScale.domain([0, 100]);
@@ -57,7 +56,6 @@ export function Story () {
   }, []);
 
   const yScale = useMemo(() => {
-    // const _yScale = scaleLinear();
     const _yScale = scalePow();
     _yScale.exponent(2);
     _yScale.domain([0, 100]);
@@ -70,11 +68,20 @@ export function Story () {
     onPointerDown,
     onPointerUp,
     onWheelZoom,
+    gesture,
   } = usePanZoom({
     xScale,
     yScale,
     onUpdate: () => {
       bumpRev();
+    },
+    minZoom: {
+      xSpan: 10,
+      ySpan: 5,
+    },
+    maxZoom: {
+      xSpan: 200,
+      ySpan: 300,
     },
     registerMoveListener: (onPointerMove) => {
       // Only listen to move events while an interaction is happening.
@@ -109,7 +116,13 @@ export function Story () {
     }
   }, [chartElement]);
 
-  return (
+  return <>
+    <p>
+      This shows the <kbd>minZoom</kbd> and <kbd>maxZoom</kbd> options which specify how "close" or "far" a user can zoom in the chart, in terms of domain values. For example, <kbd>minZoom.xSpan = 10</kbd> will not let the chart zoom in to less than a span of 10 domain values visible in the X axis. This differs from the <kbd>constraint</kbd> because it only limits zooming, not panning.
+    </p>
+    <p>
+      This uses a non-linear chart using an exponential <kbd>scalePow</kbd> scale, so the pixel size of a min/max zoom span will change as you pan. Notice the centered gray "Min Zoom" rectangle changing size as you move along the scale.
+    </p>
     <div style={{
       width: chartWidth,
       height: chartHeight,
@@ -198,11 +211,25 @@ export function Story () {
               scaleRev={rev}
             />
           </g>
+          {gesture.inProgress ? (
+            <g transform={`translate(20, 40)`}>
+              <rect
+                x={0}
+                y={0}
+                width={100}
+                height={24}
+                fill="tomato"
+              />
+              <text dx={5} dy={16} style={{fill: 'white'}}>
+                gesture active
+              </text>
+            </g>
+          ) : null}
           <circle fill="orange" r={20}
             cx={xScale(30)}
             cy={yScale(30)}
           />
-          <circle fill="lightgray" r={20}
+          <circle fill="rgba(0, 0, 0, 0.25)" r={20}
             cx={xScale(50)}
             cy={yScale(50)}
           />
@@ -218,8 +245,105 @@ export function Story () {
             cx={xScale(70)}
             cy={yScale(70)}
           />
+          {gesture.minZoom?.xSpan && gesture.minZoom.ySpan ? (
+            <ZoomConstraint
+              domainX={xScale.invert(chartWidth / 2)}
+              domainY={yScale.invert(chartHeight / 2)}
+              domainXSpan={gesture.minZoom.xSpan}
+              domainYSpan={gesture.minZoom.ySpan}
+              xScale={xScale}
+              yScale={yScale}
+              fill={'#44555530'}
+              stroke={'#666'}
+              label='Min Zoom'
+            />
+          ) : null}
+          {/* Current zoom span (domain) */}
+          <g transform={`translate(20, 40)`}>
+            <rect
+              x={0}
+              y={0}
+              width={220}
+              height={50}
+              fill="white"
+              stroke="#666"
+              strokeWidth={2}
+              rx={2}
+              ry={2}
+            />
+            <text dx={5} dy={20} style={{fill: '#333'}}>
+              zoom span X: {Math.floor(getWidth(...xScale.domain()))} (max: {gesture.maxZoom!.xSpan})
+            </text>
+            <text dx={5} dy={40} style={{fill: '#333'}}>
+              zoom span Y: {Math.floor(getWidth(...yScale.domain()))} (max: {gesture.maxZoom!.ySpan})
+            </text>
+          </g>
         </svg>
       </div>
     </div>
-  );
+  </>;
+}
+Story_ZoomConstraints.storyName = 'Zoom Constraints';
+
+function ZoomConstraint ({
+  domainX,
+  domainY,
+  domainXSpan,
+  domainYSpan,
+  xScale,
+  yScale,
+  r = 2,
+  fill = 'transparent',
+  stroke = '#333',
+  strokeWidth = 2,
+  label = '',
+}: {
+  domainX: number;
+  domainY: number;
+  domainXSpan: number;
+  domainYSpan: number;
+  xScale: IScale;
+  yScale: IScale;
+  r?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  label?: string;
+}) {
+  const domainXSpanHalf = domainXSpan / 2;
+  const domainYSpanHalf = domainYSpan / 2;
+  const domainX0 = domainX - domainXSpanHalf;
+  const domainX1 = domainX + domainXSpanHalf;
+  const domainY0 = domainY - domainYSpanHalf;
+  const domainY1 = domainY + domainYSpanHalf;
+  const rangeX0 = xScale(domainX0);
+  const rangeX1 = xScale(domainX1);
+  const rangeY1 = yScale(domainY0);
+  const rangeY0 = yScale(domainY1);
+  const rangeWidth = rangeX1 - rangeX0;
+  const rangeHeight = rangeY1 - rangeY0;
+  return <>
+    <g transform={`translate(${rangeX0}, ${rangeY0})`}>
+      <rect
+        x={0}
+        y={0}
+        width={rangeWidth}
+        height={rangeHeight}
+        rx={r}
+        ry={r}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+      {/* label */}
+      <text dx={4} dy={16} style={{fill: '#111'}}>
+        {label}
+      </text>
+    </g>
+  </>;
+}
+
+
+function getWidth (...ns: number[]): number {
+  return Math.abs(Math.min(...ns) - Math.max(...ns));
 }

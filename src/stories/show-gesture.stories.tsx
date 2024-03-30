@@ -1,25 +1,25 @@
-import { scaleLinear, scalePow } from 'd3-scale';
+import { scalePow } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
-import { easeOutQuad } from 'tween-functions-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom } from '~';
+
+import { BBox } from './etc/BBox';
+import { InitialScales } from './etc/InitialScales';
+import { Pointers } from './etc/Pointers';
 
 
 export default {
-  title: 'X Axis animated range',
+  title: 'usePanZoom',
 };
 
 
+const chartWidth = 1000;
 const chartHeight = 600;
-let chartWidth = 1000;
-const minWidth = 800;
-const maxWidth = 1000;
 
 
-export function Story () {
+export function Story3 () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -50,13 +50,6 @@ export function Story () {
     };
   }
 
-  const xPixelScale = useMemo(() => {
-    const _xScale = scaleLinear();
-    _xScale.domain([0, chartWidth]);
-    _xScale.range([0, chartWidth]);
-    return _xScale;
-  }, []);
-
   const xScale = useMemo(() => {
     const _xScale = scalePow();
     _xScale.exponent(2);
@@ -65,80 +58,23 @@ export function Story () {
     return _xScale;
   }, []);
 
-  const [, rerender] = useRev();
-
-  useEffect(() => {
-    let step = 1;
-    let tAni: number;
-    const doStep = () => {
-      cancelAnimationFrame(tAni);
-      if (step === 1) {
-        // Grow
-        const start = Date.now();
-        const ani = () => {
-          const newWidth = easeOutQuad(
-            Date.now() - start,
-            minWidth,
-            maxWidth,
-            3000,
-          );
-          chartWidth = newWidth;
-          xScale.range([0, newWidth]);
-          rerender();
-          tAni = requestAnimationFrame(ani);
-        };
-        tAni = requestAnimationFrame(ani);
-        step = 2;
-      } else if (step === 2) {
-        // Do nothing
-        step = 3;
-      } else if (step === 3) {
-        // Shrink
-        const start = Date.now();
-        const ani = () => {
-          const newWidth = easeOutQuad(
-            Date.now() - start,
-            maxWidth,
-            minWidth,
-            3000,
-          );
-          chartWidth = newWidth;
-          xScale.range([0, newWidth]);
-          rerender();
-          tAni = requestAnimationFrame(ani);
-        };
-        tAni = requestAnimationFrame(ani);
-        step = 4;
-      } else if (step === 4) {
-        // Do nothing
-        step = 1;
-      }
-    };
-    doStep();
-    const tStep = setInterval(doStep, 3000);
-    return () => {
-      cancelAnimationFrame(tAni);
-      clearTimeout(tStep);
-    }
-  }, [xScale, rerender]);
-
   const yScale = useMemo(() => {
-    const _yScale = scaleLinear();
-    _yScale.domain([0, 10]);
+    const _yScale = scalePow();
+    _yScale.exponent(2);
+    _yScale.domain([0, 100]);
     _yScale.range([chartHeight, 0]);
     return _yScale;
   }, []);
-
-  const frozenYScale = useMemo(() => yScale.copy(), [yScale]);
 
   const [rev, bumpRev] = useRev();
   const {
     onPointerDown,
     onPointerUp,
     onWheelZoom,
+    gesture,
   } = usePanZoom({
     xScale,
-    yScale: frozenYScale,
+    yScale,
     onUpdate: () => {
       bumpRev();
     },
@@ -175,7 +111,10 @@ export function Story () {
     }
   }, [chartElement]);
 
-  return (
+  return <>
+    <p>
+      This draws the elements of your gesture: the pointers, the initial bbox, the current bbox. Try using multiple fingers on a touch screen!
+    </p>
     <div style={{
       width: chartWidth,
       height: chartHeight,
@@ -242,36 +181,92 @@ export function Story () {
             height={chartHeight}
             fill="whitesmoke"
           />
-          <circle fill="cadetblue" r={20}
-            cx={xScale(40)}
-            cy={yScale(5)}
-          />
-          <circle fill="springgreen" r={20}
-            cx={xScale(60)}
-            cy={yScale(5)}
-          />
-          <g transform={`translate(0, ${chartHeight})`}>
+          <g transform={`translate(${chartWidth}, 0)`}>
             <Axis
-              orient="top"
-              scale={xPixelScale}
-              tickArguments={[20]}
-              color="#ccc"
-              tickSizeInner={chartHeight - 20}
-              tickSizeOuter={chartHeight - 20}
+              orient="left"
+              scale={yScale}
+              tickArguments={[10]}
+              color="#f99"
+              tickSizeInner={chartWidth - 40}
+              tickSizeOuter={chartWidth - 40}
               scaleRev={rev}
             />
+          </g>
+          <g transform={`translate(0, ${chartHeight})`}>
             <Axis
               orient="top"
               scale={xScale}
               tickArguments={[10]}
-              color="#999"
+              color="#99f"
               tickSizeInner={chartHeight - 40}
               tickSizeOuter={chartHeight - 40}
               scaleRev={rev}
             />
           </g>
+          <InitialScales
+            gesture={gesture}
+            xScale={xScale}
+            yScale={yScale}
+          />
+          {gesture.inProgress ? <>
+            <BBox
+              bbox={gesture.initialGestureBBox}
+              fill="rgba(0, 0, 255, 0.2)"
+              label="initial bbox"
+            />
+            <BBox
+              bbox={gesture.currentGestureBBox}
+              fill="rgba(255, 0, 0, 0.2)"
+              label="current bbox"
+            />
+            <Pointers
+              pointers={gesture.pointerPositions}
+              edge={gesture.currentGestureBBox}
+              showText
+            />
+          </> : null}
+          {gesture.inProgress ? (
+            <g transform={`translate(20, 40)`}>
+              <rect
+                x={0}
+                y={0}
+                width={100}
+                height={40}
+                fill="tomato"
+              />
+              <text dx={5} dy={16} style={{fill: 'white'}}>
+                gesture active
+              </text>
+              <text dx={5} dy={32} style={{fill: 'white'}}>
+                {gesture.singleAxis ?? 'both axes'}
+              </text>
+            </g>
+          ) : null}
+          <circle fill="orange" r={20}
+            cx={xScale(30)}
+            cy={yScale(30)}
+          />
+          <circle fill="rgba(0, 0, 0, 0.25)" r={20}
+            cx={xScale(50)}
+            cy={yScale(50)}
+          />
+          <circle fill="crimson" r={20}
+            cx={xScale(30)}
+            cy={yScale(70)}
+          />
+          <circle fill="peachpuff" r={20}
+            cx={xScale(70)}
+            cy={yScale(30)}
+          />
+          <circle fill="springgreen" r={20}
+            cx={xScale(70)}
+            cy={yScale(70)}
+          />
         </svg>
       </div>
     </div>
-  );
+  </>;
 }
+Story3.storyName = 'Show Gesture';
+
+

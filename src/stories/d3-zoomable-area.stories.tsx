@@ -1,5 +1,5 @@
 import { extent, max } from 'd3-array';
-import { csvParse, autoType } from 'd3-dsv';
+import { autoType, csvParse } from 'd3-dsv';
 import { scaleLinear, scaleUtc } from 'd3-scale';
 import { curveStepAfter, area as d3Area } from 'd3-shape';
 import uniqueId from 'lodash/uniqueId';
@@ -7,10 +7,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom } from '~';
 
-import csv from './flights.csv';
+import csv from './etc/flights.csv';
 
 
 interface IDatum {

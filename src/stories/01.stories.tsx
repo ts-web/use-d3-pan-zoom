@@ -1,16 +1,16 @@
 import { scaleLinear } from 'd3-scale';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useRev } from 'use-rev';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta, usePanZoom, type IBBox } from '~';
+import { normalizeWheelDelta, usePanZoom } from '~';
 
-
-import imageFile from './taylor-kopel-JNm1dAElVtE-unsplash-min.jpg';
+import { Pointers } from './etc/Pointers';
+import imageFile from './etc/taylor-kopel-JNm1dAElVtE-unsplash-min.jpg';
 
 
 export default {
-  title: 'Simple',
+  title: 'usePanZoom',
 };
 
 const chartWidth = 800;
@@ -236,42 +236,5 @@ export function Story () {
     </div>
   );
 }
+Story.storyName = 'Intro';
 
-
-function Pointers ({
-  pointers,
-  edge: {
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-  },
-}: {
-  pointers: Map<string | number, {x: number; y: number}>;
-  edge: IBBox;
-}) {
-  const nodes: ReactNode[] = [];
-
-  for (const [_pointerId, {x, y}] of pointers) {
-    const pointerId = String(_pointerId);
-    const isEdge = (
-      x === xMin || x === xMax ||
-      y === yMin || y === yMax
-    );
-    nodes.push(
-      <g key={pointerId} transform={`translate(${x}, ${y})`}>
-        <circle
-          cx={0}
-          cy={0}
-          r={40}
-          fill={isEdge ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}
-          stroke={isEdge ? '#111' : 'none'}
-        />
-      </g>
-    );
-  }
-
-  return <>
-    {nodes}
-  </>;
-}

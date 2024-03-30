@@ -1,15 +1,13 @@
 import { scalePow } from 'd3-scale';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import type { IBBox, IGesture, IScale } from '~/types';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom, type IBBox, type IScale } from '~';
 
 
 export default {
-  title: 'Constraint',
+  title: 'usePanZoom',
 };
 
 
@@ -17,7 +15,7 @@ const chartWidth = 1000;
 const chartHeight = 600;
 
 
-export function Story () {
+export function Story_PanningConstraints () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -101,7 +99,10 @@ export function Story () {
     },
   });
 
-  return (
+  return <>
+    <p>
+      This chart uses the <kbd>constrain</kbd> option to define a fence (in domain values) that the user cannot pan or zoom out of. Zoom out to see the red border of the constraint bounds.
+    </p>
     <div style={{
       width: chartWidth,
       height: chartHeight,
@@ -196,41 +197,6 @@ export function Story () {
             scaleRev={rev}
           />
         </g>
-        <InitialScales
-          gesture={gesture}
-          xScale={xScale}
-          yScale={yScale}
-        />
-        {gesture.inProgress ? <>
-          <BBox
-            bbox={gesture.initialGestureBBox}
-            fill="rgba(0, 0, 255, 0.2)"
-            label="initial bbox"
-          />
-          <BBox
-            bbox={gesture.currentGestureBBox}
-            fill="rgba(255, 0, 0, 0.2)"
-            label="current bbox"
-          />
-          <Pointers
-            pointers={gesture.pointerPositions}
-            edge={gesture.currentGestureBBox}
-          />
-        </> : null}
-        {gesture.inProgress ? (
-          <g transform={`translate(20, 40)`}>
-            <rect
-              x={0}
-              y={0}
-              width={100}
-              height={24}
-              fill="tomato"
-            />
-            <text dx={5} dy={16} style={{fill: 'white'}}>
-              gesture active
-            </text>
-          </g>
-        ) : null}
         <circle fill="orange" r={20}
           cx={xScale(30)}
           cy={yScale(30)}
@@ -253,8 +219,9 @@ export function Story () {
         />
       </svg>
     </div>
-  );
+  </>;
 }
+Story_PanningConstraints.storyName = 'Panning Constraints';
 
 function Constraint ({
   domainBBbox: {
@@ -355,115 +322,3 @@ function Constraint ({
 }
 
 
-
-function InitialScales ({
-  gesture: {
-    inProgress,
-    initialXScale,
-    initialYScale,
-  },
-  xScale,
-  yScale,
-}: {
-  gesture: IGesture;
-  xScale: IScale;
-  yScale: IScale;
-}) {
-  const xRange = initialXScale.domain().map((domainVal) => xScale(domainVal));
-  const yRange = initialYScale.domain().map((domainVal) => yScale(domainVal));
-  const [x0, x1] = xRange;
-  const [y1, y0] = yRange;
-  const xWidth = x1 - x0;
-  const yWidth = y1 - y0;
-  return (
-    inProgress ? (
-      <g transform={`translate(${x0}, ${y0})`}>
-        <rect
-          x={0}
-          y={0}
-          width={xWidth}
-          height={yWidth}
-          fill="rgba(0, 0, 0, 0.1)"
-        />
-        <text dx={5} dy={16} style={{fill: '#111'}}>
-          initial range
-        </text>
-      </g>
-    ) : null
-  );
-}
-
-function BBox ({
-  bbox: {
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-  },
-  fill,
-  label,
-}: {
-  bbox: IBBox;
-  fill: string;
-  label: string;
-}) {
-  const xWidth = Math.max(1, xMax - xMin);
-  const yWidth = Math.max(1, yMax - yMin);
-  return (
-    <g transform={`translate(${xMin}, ${yMin})`}>
-      <rect
-        x={0}
-        y={0}
-        width={xWidth}
-        height={yWidth}
-        fill={fill}
-        stroke="#111"
-        strokeWidth={1}
-      />
-      <text dx={5} dy={16} style={{fill: '#111'}}>
-        {label}
-      </text>
-    </g>
-  );
-}
-
-function Pointers ({
-  pointers,
-  edge: {
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-  },
-}: {
-  pointers: Map<string | number, {x: number; y: number}>;
-  edge: IBBox;
-}) {
-  const nodes: ReactNode[] = [];
-
-  for (const [_pointerId, {x, y}] of pointers) {
-    const pointerId = String(_pointerId);
-    const isEdge = (
-      x === xMin || x === xMax ||
-      y === yMin || y === yMax
-    );
-    nodes.push(
-      <g key={pointerId} transform={`translate(${x}, ${y})`}>
-        <circle
-          cx={0}
-          cy={0}
-          r={40}
-          fill={isEdge ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}
-          stroke={isEdge ? '#111' : 'none'}
-        />
-        <text dx={45} dy={0} style={{fill: '#111'}}>
-          pointerId: {pointerId}
-        </text>
-      </g>
-    );
-  }
-
-  return <>
-    {nodes}
-  </>;
-}

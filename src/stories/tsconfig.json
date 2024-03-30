@@ -10,7 +10,7 @@
     }
   },
   "include": [
-    "modules.d.ts",
+    "etc/modules.d.ts",
     "**/*"
   ]
 }

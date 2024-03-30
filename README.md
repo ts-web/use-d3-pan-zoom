@@ -253,7 +253,7 @@ export function MyChart () {
 ```
 
 
-# Using `useTransform`
+## Using `useTransform`
 
 The `useTransform` hook allows you to transform a `g` group element with `transform()` and `scale()`.
 This is useful when you have a complex drawing with many points and you don't want to scale each point individually.

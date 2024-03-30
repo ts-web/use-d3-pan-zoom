@@ -5,7 +5,8 @@ import {
   calcKT,
   calcKTs,
   updateScales,
-} from '~/panZoom-utils';
+} from '~/index';
+
 
 test('calcKT', () => {
   expect(calcKT({

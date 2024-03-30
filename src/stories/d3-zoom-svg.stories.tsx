@@ -5,7 +5,7 @@ import { useRev } from 'use-rev';
 
 import { useTransform, usePanZoom, normalizeWheelDelta } from '~';
 
-import { zoomSvgData } from './not-random-data';
+import { zoomSvgData } from './etc/not-random-data';
 
 
 export default {

@@ -1,23 +1,22 @@
 import { scaleLinear, scalePow } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
-import { easeOutQuad } from 'tween-functions-ts';
+import { linear } from 'tween-functions-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom } from '~';
 
 
 export default {
-  title: 'X Axis animated domain',
+  title: 'usePanZoom',
 };
 
 
-const chartWidth = 1000;
 const chartHeight = 600;
+let chartWidth = 800;
 
 
-export function Story () {
+export function Story_ChangingChartSize () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -65,58 +64,49 @@ export function Story () {
 
   const [, rerender] = useRev();
 
+
+  // Animate the range
   useEffect(() => {
-    let step = 1;
-    let tAni: number;
-    const minDomainEnd = 100;
-    const maxDomainEnd = 200;
-    const doStep = () => {
-      cancelAnimationFrame(tAni);
-      if (step === 1) {
-        // Grow
-        const start = Date.now();
-        const ani = () => {
-          const newDomainEnd = easeOutQuad(
-            Date.now() - start,
-            minDomainEnd,
-            maxDomainEnd,
-            3000,
-          );
-          xScale.domain([0, newDomainEnd]);
-          rerender();
-          tAni = requestAnimationFrame(ani);
-        };
-        tAni = requestAnimationFrame(ani);
-        step = 2;
-      } else if (step === 2) {
-        // Do nothing
-        step = 3;
-      } else if (step === 3) {
-        // Shrink
-        const start = Date.now();
-        const ani = () => {
-          const newDomainEnd = easeOutQuad(
-            Date.now() - start,
-            maxDomainEnd,
-            minDomainEnd,
-            3000,
-          );
-          xScale.domain([0, newDomainEnd]);
-          rerender();
-          tAni = requestAnimationFrame(ani);
-        };
-        tAni = requestAnimationFrame(ani);
-        step = 4;
-      } else if (step === 4) {
-        // Do nothing
-        step = 1;
-      }
-    };
-    doStep();
-    const tStep = setInterval(doStep, 3000);
+    const duration = 1000;
+    // The changing animation variables
+    let startTime: number;
+    let startValue: number;
+    let endValue: number;
+    let currentValue = chartWidth;
+    randomize();
+
+    // Run the animation loop
+    let tAnimation = requestAnimationFrame(animationStep);
+    function animationStep () {
+      const currentTime = Date.now();
+      const timeSinceStart = Math.min(duration, currentTime - startTime);
+
+      currentValue = linear(
+        timeSinceStart,
+        startValue,
+        endValue,
+        duration,
+      );
+
+      chartWidth = currentValue;
+      xScale.range([0, currentValue]);
+      rerender();
+
+      // Schedule the next frame
+      tAnimation = requestAnimationFrame(animationStep);
+    }
+
+    // Run the randomizer
+    const tInterval = setInterval(randomize, duration);
+    function randomize () {
+      startTime = Date.now();
+      startValue = currentValue;
+      endValue = 800 + (Math.random() * 200);
+    }
+
     return () => {
-      cancelAnimationFrame(tAni);
-      clearTimeout(tStep);
+      cancelAnimationFrame(tAnimation);
+      clearInterval(tInterval);
     }
   }, [xScale, rerender]);
 
@@ -173,7 +163,13 @@ export function Story () {
     }
   }, [chartElement]);
 
-  return (
+  return <>
+    <p>
+      This chart is changing its size continually. This changes the range of the scale because the range represents the pixel size of the chart. However, in this case the domain doesn't change, which makes the chart drawing "stretch" with the chart.
+    </p>
+    <p>
+      The <kbd>usePanZoom</kbd> hook preserves the gesture even if the chart resizes. If you drag or zoom the chart, the chart will stay under your pointer manipulation where you grabbed it, instead of shifting or slipping as the chart resizes.
+    </p>
     <div style={{
       width: chartWidth,
       height: chartHeight,
@@ -238,38 +234,39 @@ export function Story () {
             y={0}
             width={chartWidth}
             height={chartHeight}
-            fill="whitesmoke"
-          />
-          <circle fill="cadetblue" r={20}
-            cx={xScale(40)}
-            cy={yScale(5)}
-          />
-          <circle fill="springgreen" r={20}
-            cx={xScale(60)}
-            cy={yScale(5)}
+            fill='whitesmoke'
           />
           <g transform={`translate(0, ${chartHeight})`}>
             <Axis
-              orient="top"
+              orient='top'
               scale={xPixelScale}
               tickArguments={[20]}
-              color="#ccc"
+              color='#ccc'
               tickSizeInner={chartHeight - 20}
               tickSizeOuter={chartHeight - 20}
               scaleRev={rev}
             />
             <Axis
-              orient="top"
+              orient='top'
               scale={xScale}
               tickArguments={[10]}
-              color="#999"
+              color='#999'
               tickSizeInner={chartHeight - 40}
               tickSizeOuter={chartHeight - 40}
               scaleRev={rev}
             />
           </g>
+          <circle fill='cadetblue' r={20}
+            cx={xScale(40)}
+            cy={yScale(5)}
+          />
+          <circle fill='springgreen' r={20}
+            cx={xScale(60)}
+            cy={yScale(5)}
+          />
         </svg>
       </div>
     </div>
-  );
+  </>;
 }
+Story_ChangingChartSize.storyName = 'Changing Chart Size';

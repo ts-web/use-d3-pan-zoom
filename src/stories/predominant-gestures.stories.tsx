@@ -1,14 +1,14 @@
 import { scaleLinear } from 'd3-scale';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import type { IBBox } from '~/types';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom } from '~';
+
+import { Pointers } from './etc/Pointers';
 
 
 export default {
-  title: 'Gestures',
+  title: 'usePanZoom',
 };
 
 
@@ -16,7 +16,7 @@ const chartWidth = 1000;
 const chartHeight = 600;
 
 
-export function Story () {
+export function Story_PredominantGestures () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -113,10 +113,10 @@ export function Story () {
         This happens when the pointers have negligible offset in a certain axis. When that happens, the gesture becomes single-axis for the duration of the gesture.
       </p>
       <p>
-        This is an important affordance in a gesture library. In these cases where the pointers are very close together in a given axis, any change in that distance will cause unexpected resizing. So a gesture library should detect this condition and disable the non-dominant axis.
+        This is an important feature in a gesture library, because in cases like this where the pointers are very close together in a given axis, any change in that distance will cause a large and unexpected movement. So a gesture library should prevent that.
       </p>
       <p>
-        Example: when the user is doing a vertical expand gesture, the pointers are vertically in line, and there may be 1px of horizontal distance between them. If that distance becomes 2px, that's a 200% increase in the horizontal direction. But we certainly should not grow the chart by 200% in the x axis during a vertical gesture!
+        Example: when the user is doing a vertical expand gesture, the pointers are vertically in line with each other, and they may have about 1px of horizontal distance between them. If that distance becomes 2px, that's a 200% increase in the horizontal direction. To move the chart 200% in the horizontal direction would be unexpected and jarring, especially since the user is just doing a vertical gesture!
       </p>
       <p>
         In the chart below, use two fingers to do a vertical zoom, and then do a horizontal zoom. Arrows will appear indicating whether it's a vertical or horizontal gesture, or both.
@@ -231,45 +231,5 @@ export function Story () {
     </div>
   );
 }
-Story.storyName = 'Predominant Gesture Detection'
+Story_PredominantGestures.storyName = 'Predominant Gesture Detection'
 
-
-
-
-function Pointers ({
-  pointers,
-  edge: {
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-  },
-}: {
-  pointers: Map<string | number, {x: number; y: number}>;
-  edge: IBBox;
-}) {
-  const nodes: ReactNode[] = [];
-
-  for (const [_pointerId, {x, y}] of pointers) {
-    const pointerId = String(_pointerId);
-    const isEdge = (
-      x === xMin || x === xMax ||
-      y === yMin || y === yMax
-    );
-    nodes.push(
-      <g key={pointerId} transform={`translate(${x}, ${y})`}>
-        <circle
-          cx={0}
-          cy={0}
-          r={40}
-          fill={isEdge ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}
-          stroke={isEdge ? '#111' : 'none'}
-        />
-      </g>
-    );
-  }
-
-  return <>
-    {nodes}
-  </>;
-}

@@ -1,12 +1,11 @@
+import { randomNormal } from 'd3-random';
 import { scaleLinear, scaleOrdinal } from 'd3-scale';
 import { schemeCategory10 } from 'd3-scale-chromatic';
-import { randomNormal } from 'd3-random';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRev } from 'use-rev';
 import { Axis } from 'react-d3-axis-ts';
+import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta } from '~/panZoom-utils';
-import { usePanZoom } from '~/usePanZoom';
+import { normalizeWheelDelta, usePanZoom } from '~';
 
 
 export default {

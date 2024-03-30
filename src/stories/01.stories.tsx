@@ -115,7 +115,16 @@ export function Story () {
     }
   }, [chartElement]);
 
-  return (
+  return <>
+    <p>
+      This is a SVG chart rendering an image and a circle. You can pan and zoom using the mouse or using touch interaction. The chart uses d3 scales (an X scale and a Y scale). Your panning and zooming change the <i>domains</i> of those scales (the domain says what range of data is visible in the chart).
+    </p>
+    <p>
+      The image and circle are positioned using these scales. The circle's center point is specified in <i>domain values</i> that are mapped using the x and y scales into <i>range values</i> (pixel values, relative to the chart). The image is positioned in a similar way, with <kbd>x</kbd>, <kbd>y</kbd>, <kbd>width</kbd>, and <kbd>height</kbd> calculated from domain values using the scales. The image changes its pixel size as you zoom, but it keeps its domain position. The circle size however stays the same because its <kbd>r</kbd> radius is a static pixel value.
+    </p>
+    <p>
+      Note: this chart uses <kbd>preserveAspectRatio</kbd>. See the <kbd>useTransform</kbd> page for a similar example without <kbd>preserveAspectRatio</kbd>.
+    </p>
     <div style={{
       width: chartWidth,
       height: chartHeight,
@@ -234,7 +243,7 @@ export function Story () {
         </svg>
       </div>
     </div>
-  );
+  </>;
 }
 Story.storyName = 'Intro';
 

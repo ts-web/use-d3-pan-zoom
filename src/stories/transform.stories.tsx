@@ -115,8 +115,7 @@ export function Story () {
     }
   }, [chartElement]);
 
-
-  const {x, y, kx, ky} = useTransform({
+  const {tx, ty, kx, ky} = useTransform({
     initialXScale: initialXScale.current,
     initialYScale: initialYScale.current,
     xScale,
@@ -198,7 +197,7 @@ export function Story () {
               fill="whitesmoke"
             />
 
-            <g transform={`translate(${x}, ${y}) scale(${kx}, ${ky})`}>
+            <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
               <rect
                 fill='antiquewhite'
                 stroke='#000'

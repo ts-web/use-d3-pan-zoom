@@ -1,24 +1,19 @@
-import { extent, max } from 'd3-array';
-import { autoType, csvParse } from 'd3-dsv';
-import { scaleLinear, scaleUtc } from 'd3-scale';
-import { curveStepAfter, area as d3Area } from 'd3-shape';
+import { extent } from 'd3-array';
+import { Delaunay } from 'd3-delaunay';
+import { scaleLinear } from 'd3-scale';
 import uniqueId from 'lodash/uniqueId';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
 import { useRev } from 'use-rev';
 
-import { normalizeWheelDelta, usePanZoom } from '~';
+import { normalizeWheelDelta, usePanZoom, useTransform } from '~';
 
-import csv from './etc/flights.csv';
+import { voronoiData as data } from './etc/not-random-data';
 
 
-interface IDatum {
-  date: Date;
-  value: number;
-}
-const data = csvParse(csv, autoType) as IDatum[];
-const dataMax = max(data, d => d.value)!;
-const dataExtent = extent<IDatum, Date>(data, d => d.date) as [Date, Date];
+const dataXExtent = extent(data, (d) => d[0]) as [number, number];
+const dataYExtent = extent(data, (d) => d[1]) as [number, number];
+
 
 
 export default {
@@ -28,13 +23,12 @@ export default {
 // Specify the chart’s dimensions.
 const width = 928;
 const height = 500;
-const marginTop = 20;
-const marginRight = 20;
-const marginBottom = 30;
+const marginTop = 0;
+const marginRight = 10;
+const marginBottom = 20;
 const marginLeft = 30;
-const oneYear = 3.156e+10;
 
-export function ZoomableAreaChart () {
+export function VoronoiChart () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -66,8 +60,8 @@ export function ZoomableAreaChart () {
   }
 
   const xScale = useMemo(() => {
-    const _xScale = scaleUtc();
-    _xScale.domain(dataExtent);
+    const _xScale = scaleLinear();
+    _xScale.domain(dataXExtent);
     _xScale.range([marginLeft, width - marginRight]);
     return _xScale;
   }, []);
@@ -75,21 +69,15 @@ export function ZoomableAreaChart () {
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([0, dataMax]).nice();
+    _yScale.domain(dataYExtent);
     _yScale.range([height - marginBottom, marginTop]);
     return _yScale;
   }, []);
 
-  const [scaleRev, bumpRev] = useRev();
+  const initialXScale = useRef(xScale.copy());
+  const initialYScale = useRef(yScale.copy());
 
-  useEffect(() => {
-    // I don't have a library to do the same animation. This is the end state.
-    xScaleRef.current.domain([
-      new Date('1998-04-02T00:00:00.000Z'),
-      new Date('2003-07-02T11:59:59.999Z'),
-    ]);
-    bumpRev();
-  }, [bumpRev]);
+  const [scaleRev, bumpRev] = useRev();
 
   const {
     onPointerDown,
@@ -98,14 +86,6 @@ export function ZoomableAreaChart () {
   } = usePanZoom({
     xScale,
     yScale,
-    constrain: {
-      xMin: Number(dataExtent[0]),
-      xMax: Number(dataExtent[1]),
-      yMin: -Infinity,
-      yMax: Infinity,
-    },
-    minZoom: {xSpan: oneYear / 2},
-    lockYAxis: true,
     onUpdate: () => {
       bumpRev();
     },
@@ -142,20 +122,34 @@ export function ZoomableAreaChart () {
     }
   }, [chartElement]);
 
-  const pathD = d3Area<IDatum>()
-    .curve(curveStepAfter)
-    .x(d => xScale(d.date))
-    .y0(yScale(0))
-    .y1(d => yScale(d.value))(data)!
-  ;
-
   // Create a clip-path with a unique ID.
   const clipId = useMemo(() => uniqueId('clip'), []);
+  const xAxisClipId = useMemo(() => uniqueId('xAxisClip'), []);
+
+  const {kx, ky} = useTransform({
+    initialXScale: initialXScale.current,
+    initialYScale: initialYScale.current,
+    xScale,
+    yScale,
+    scaleRev,
+  });
+
+  const scaledPositions = data.map((d) => ([
+    xScale(d[0]),
+    yScale(d[1]),
+  ] as [number, number]))
+
+  const voronoiD = Delaunay
+    .from(scaledPositions)
+    .voronoi([35, 0, width, height - 25])
+    .render()
+  ;
+
 
   return (
     <div>
       <p>
-        This is a reproduction of the d3 <a href="https://observablehq.com/@d3/zoomable-area-chart" target="_blank">Zoomable area chart</a> example.
+        This is a reproduction of the d3 <a href='https://observablehq.com/@d3/x-y-zoom' target='_blank'>X/Y Zoom</a> example.
       </p>
       <div style={{
         width: width,
@@ -224,44 +218,56 @@ export function ZoomableAreaChart () {
                 height={height - marginTop - marginBottom}
               />
             </clipPath>
-            <path
-              clipPath={`url(#${clipId})`}
-              fill='steelblue'
-              d={pathD}
-            />
+            <clipPath id={xAxisClipId}>
+              <rect
+                x={marginLeft}
+                y={height - marginBottom}
+                width={width - marginLeft - marginRight}
+                height={marginBottom}
+              />
+            </clipPath>
             <g transform={`translate(${marginLeft}, 0)`}>
               <Axis
-                orient="left"
+                orient='left'
                 scale={yScale}
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any -- todo
-                tickArguments={[null, 's'] as any}
                 scaleRev={scaleRev}
+                tickArguments={[12 * (height / width)]}
               />
             </g>
-            <g transform={`translate(0, ${height - marginBottom})`}>
-              <Axis
-                orient="bottom"
-                scale={xScale}
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any -- todo
-                tickArguments={[width / 80] as any}
-                tickSizeOuter={0}
-                scaleRev={scaleRev}
+            <g clipPath={`url(#${xAxisClipId})`}>
+              <g transform={`translate(0, ${height - marginBottom})`}>
+                <Axis
+                  orient='bottom'
+                  scale={xScale}
+                  scaleRev={scaleRev}
+                  tickArguments={[12]}
+                />
+              </g>
+            </g>
+            <g clipPath={`url(#${clipId})`}>
+              <path
+                d={voronoiD}
+                fill='none'
+                stroke='#ccc'
+                strokeWidth={0.5}
               />
+              {data.map((d, i) => (
+                  <ellipse key={i}
+                    fill={d[2]}
+                    cx={scaledPositions[i][0]}
+                    cy={scaledPositions[i][1]}
+                    rx={6 * Math.sqrt(Math.max(kx, ky))}
+                    ry={6 * Math.sqrt(Math.max(kx, ky))}
+                  />
+                ))}
             </g>
           </svg>
         </div>
       </div>
       <p>
-        Demonstrates:
+        This uses <kbd>d3-delaunay</kbd> to generate voronoi lines on-the-fly. This is especially visible when using a multi-finger gesture to distort the chart.
       </p>
-      <ul>
-        <li>Extent constraints</li>
-        <li>Min zoom range</li>
-        <li>Y axis locking</li>
-        <li>d3-area</li>
-        <li>clipping</li>
-        <li>Date X scale</li>
-      </ul>
     </div>
   );
 }
+VoronoiChart.storyName = 'X/Y Zoom (Voronoi)';

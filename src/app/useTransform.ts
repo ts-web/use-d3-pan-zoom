@@ -24,8 +24,8 @@ export function useTransform ({
   yScale: IScale;
   scaleRev: unknown;
 }): {
-  x: number;
-  y: number;
+  tx: number;
+  ty: number;
   kx: number;
   ky: number;
 } {
@@ -52,8 +52,8 @@ export function useTransform ({
     });
 
     return {
-      x: tx,
-      y: ty,
+      tx,
+      ty,
       kx,
       ky,
     };

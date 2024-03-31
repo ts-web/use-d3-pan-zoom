@@ -119,7 +119,7 @@ export function Story_ChangingChartSize () {
 
   const frozenYScale = useMemo(() => yScale.copy(), [yScale]);
 
-  const [rev, bumpRev] = useRev();
+  const [scaleRev, bumpRev] = useRev();
   const {
     onPointerDown,
     onPointerUp,
@@ -244,7 +244,7 @@ export function Story_ChangingChartSize () {
               color='#ccc'
               tickSizeInner={chartHeight - 20}
               tickSizeOuter={chartHeight - 20}
-              scaleRev={rev}
+              scaleRev={scaleRev}
             />
             <Axis
               orient='top'
@@ -253,7 +253,7 @@ export function Story_ChangingChartSize () {
               color='#999'
               tickSizeInner={chartHeight - 40}
               tickSizeOuter={chartHeight - 40}
-              scaleRev={rev}
+              scaleRev={scaleRev}
             />
           </g>
           <circle fill='cadetblue' r={20}

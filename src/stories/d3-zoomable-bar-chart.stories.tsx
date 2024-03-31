@@ -100,7 +100,7 @@ export function ZoomableBarChart () {
     return _yScale;
   }, []);
 
-  const [rev, bumpRev] = useRev();
+  const [scaleRev, bumpRev] = useRev();
 
   const {
     onPointerDown,
@@ -241,7 +241,7 @@ export function ZoomableBarChart () {
               <Axis
                 orient='left'
                 scale={yScale}
-                scaleRev={rev}
+                scaleRev={scaleRev}
               />
             </g>
             <g clipPath={`url(#${xAxisClipId})`}>
@@ -251,7 +251,7 @@ export function ZoomableBarChart () {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
                   scale={xBandScaleForAxis as any}
                   tickSizeOuter={0}
-                  scaleRev={rev}
+                  scaleRev={scaleRev}
                 />
               </g>
             </g>

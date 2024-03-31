@@ -75,7 +75,7 @@ export function ZoomableScatterplot () {
     return _yScale;
   }, []);
 
-  const [rev, bumpRev] = useRev();
+  const [scaleRev, bumpRev] = useRev();
   const {
     onPointerDown,
     onPointerUp,
@@ -202,7 +202,7 @@ export function ZoomableScatterplot () {
                 strokeColor='rgba(0, 0, 0, 0.1)'
                 tickSizeInner={chartWidth - 40}
                 tickSizeOuter={chartWidth - 40}
-                scaleRev={rev}
+                scaleRev={scaleRev}
               />
             </g>
             <g transform={'translate(0, 0)'}>
@@ -214,7 +214,7 @@ export function ZoomableScatterplot () {
                 strokeColor='rgba(0, 0, 0, 0.1)'
                 tickSizeInner={chartHeight - 20}
                 tickSizeOuter={chartHeight - 20}
-                scaleRev={rev}
+                scaleRev={scaleRev}
               />
             </g>
           </svg>

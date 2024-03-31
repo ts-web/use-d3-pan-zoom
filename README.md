@@ -284,7 +284,7 @@ export function MyChart () {
     },
   });
 
-  const {x, y, kx, ky} = useTransform({
+  const {tx, ty, kx, ky} = useTransform({
     initialXScale,
     initialYScale,
     xScale,
@@ -295,7 +295,7 @@ export function MyChart () {
 
   return (
     <svg ... >
-      <g transform={`translate(${x}, ${y}) scale(${kx}, ${ky})`}>
+      <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
         <circle fill='orange' r={20}
           cx={150}
           cy={100}

@@ -66,7 +66,7 @@ export function Story3 () {
     return _yScale;
   }, []);
 
-  const [rev, bumpRev] = useRev();
+  const [scaleRev, bumpRev] = useRev();
   const {
     onPointerDown,
     onPointerUp,
@@ -189,7 +189,7 @@ export function Story3 () {
               color="#f99"
               tickSizeInner={chartWidth - 40}
               tickSizeOuter={chartWidth - 40}
-              scaleRev={rev}
+              scaleRev={scaleRev}
             />
           </g>
           <g transform={`translate(0, ${chartHeight})`}>
@@ -200,7 +200,7 @@ export function Story3 () {
               color="#99f"
               tickSizeInner={chartHeight - 40}
               tickSizeOuter={chartHeight - 40}
-              scaleRev={rev}
+              scaleRev={scaleRev}
             />
           </g>
           <InitialScales

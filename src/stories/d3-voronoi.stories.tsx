@@ -1,4 +1,3 @@
-import { extent } from 'd3-array';
 import { Delaunay } from 'd3-delaunay';
 import { scaleLinear } from 'd3-scale';
 import uniqueId from 'lodash/uniqueId';
@@ -8,12 +7,9 @@ import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom, useTransform } from '~';
 
-import { voronoiData as data } from './etc/not-random-data';
+import { orangeColors100, randomPoints100 } from './etc/not-random-data';
 
-
-const dataXExtent = extent(data, (d) => d[0]) as [number, number];
-const dataYExtent = extent(data, (d) => d[1]) as [number, number];
-
+const data = randomPoints100;
 
 
 export default {
@@ -54,25 +50,27 @@ export function VoronoiChart () {
     if (!chartElement) return;
     const rect = chartElement.getBoundingClientRect();
     chartOffset.current = {
-      x: rect.x,
+      x: rect.x + marginLeft,
       y: rect.y,
     };
   }
 
+  const yScale = useMemo(() => {
+    const _yScale = scaleLinear();
+    _yScale.domain([0, 1]);
+    _yScale.range([height - marginBottom, marginTop]);
+    return _yScale;
+  }, []);
+
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
-    _xScale.domain(dataXExtent);
+    // since the height is less than the width, base the width on the height and center the data within it.
+    const widthAdj = (1 - (width / height)) / 2;
+    _xScale.domain([0 + widthAdj, 1 - widthAdj]);
     _xScale.range([marginLeft, width - marginRight]);
     return _xScale;
   }, []);
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
-
-  const yScale = useMemo(() => {
-    const _yScale = scaleLinear();
-    _yScale.domain(dataYExtent);
-    _yScale.range([height - marginBottom, marginTop]);
-    return _yScale;
-  }, []);
 
   const initialXScale = useRef(xScale.copy());
   const initialYScale = useRef(yScale.copy());
@@ -126,7 +124,7 @@ export function VoronoiChart () {
   const clipId = useMemo(() => uniqueId('clip'), []);
   const xAxisClipId = useMemo(() => uniqueId('xAxisClip'), []);
 
-  const {kx, ky} = useTransform({
+  const {tx, ty, kx, ky} = useTransform({
     initialXScale: initialXScale.current,
     initialYScale: initialYScale.current,
     xScale,
@@ -144,7 +142,6 @@ export function VoronoiChart () {
     .voronoi([35, 0, width, height - 25])
     .render()
   ;
-
 
   return (
     <div>
@@ -251,15 +248,17 @@ export function VoronoiChart () {
                 stroke='#ccc'
                 strokeWidth={0.5}
               />
-              {data.map((d, i) => (
+              <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
+                {data.map((d, i) => (
                   <ellipse key={i}
-                    fill={d[2]}
-                    cx={scaledPositions[i][0]}
-                    cy={scaledPositions[i][1]}
-                    rx={6 * Math.sqrt(Math.max(kx, ky))}
-                    ry={6 * Math.sqrt(Math.max(kx, ky))}
+                    fill={orangeColors100[i]}
+                    cx={initialXScale.current(d[0])}
+                    cy={initialYScale.current(d[1])}
+                    rx={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
+                    ry={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
                   />
                 ))}
+              </g>
             </g>
           </svg>
         </div>

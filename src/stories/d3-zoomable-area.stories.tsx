@@ -60,7 +60,7 @@ export function ZoomableAreaChart () {
     if (!chartElement) return;
     const rect = chartElement.getBoundingClientRect();
     chartOffset.current = {
-      x: rect.x,
+      x: rect.x + marginLeft,
       y: rect.y,
     };
   }

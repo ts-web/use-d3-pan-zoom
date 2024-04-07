@@ -75,7 +75,7 @@ export function ZoomableBarChart () {
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
     _xScale.domain([0, 1]);
-    _xScale.range([marginLeft, width - marginRight]);
+    _xScale.range([0, width]);
     return _xScale;
   }, []);
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;

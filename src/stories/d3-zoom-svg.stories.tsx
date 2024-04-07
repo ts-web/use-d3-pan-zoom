@@ -1,11 +1,10 @@
-import { extent, max } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRev } from 'use-rev';
 
 import { useTransform, usePanZoom, normalizeWheelDelta } from '~';
 
-import { zoomSvgData } from './etc/not-random-data';
+import { randomNormalPoints2K } from './etc/not-random-data';
 
 
 export default {
@@ -16,9 +15,7 @@ export default {
 const width = 928;
 const height = 500;
 
-const data = zoomSvgData;
-const dataExtent = extent(data, d => d[0]) as [number, number];
-const dataMax = max(data, d => d[1])!;
+const data = randomNormalPoints2K;
 
 export function ZoomSVG () {
   const [chartElement, setChartElement] = useState<Element | null>();
@@ -51,20 +48,22 @@ export function ZoomSVG () {
     };
   }
 
+  const yScale = useMemo(() => {
+    const _yScale = scaleLinear();
+    _yScale.domain([0, 1]);
+    _yScale.range([height, 0]);
+    return _yScale;
+  }, []);
+
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
-    _xScale.domain(dataExtent);
+    // since the height is less than the width, base the width on the height and center the data within it.
+    const widthAdj = (1 - (width / height)) / 2;
+    _xScale.domain([0 + widthAdj, 1 - widthAdj]);
     _xScale.range([0, width]);
     return _xScale;
   }, []);
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
-
-  const yScale = useMemo(() => {
-    const _yScale = scaleLinear();
-    _yScale.domain([0, dataMax]).nice();
-    _yScale.range([height, 0]);
-    return _yScale;
-  }, []);
 
   const initialXScale = useRef(xScale.copy());
   const initialYScale = useRef(yScale.copy());
@@ -191,8 +190,8 @@ export function ZoomSVG () {
               {data.map((d, i) => (
                 <circle
                   key={i}
-                  cx={d[0]}
-                  cy={d[1]}
+                  cx={initialXScale.current(d[0])}
+                  cy={initialYScale.current(d[1])}
                   r={1.5}
                 />
               ))}

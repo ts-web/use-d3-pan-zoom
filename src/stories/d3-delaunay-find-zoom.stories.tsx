@@ -1,24 +1,27 @@
+import { Delaunay } from 'd3-delaunay';
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom, useTransform } from '~';
 
-import { Pointers } from './etc/Pointers';
-import imageFile from './etc/taylor-kopel-JNm1dAElVtE-unsplash-min.jpg';
+import { randomNormalPoints2K } from './etc/not-random-data';
 
 
 export default {
-  title: 'useTransform',
+  title: 'D3 Examples',
 };
 
+// Specify the chart’s dimensions.
+const width = 928;
+const height = 500;
 
-const chartWidth = 1000;
-const chartHeight = 600;
+const data = randomNormalPoints2K;
+
+const delaunay = Delaunay.from(data);
 
 
-
-export function Story () {
+export function DelaunayFindZoom () {
   const [chartElement, setChartElement] = useState<Element | null>();
 
   // When the chartElement is resolved, prevent the default action of certain events:
@@ -49,29 +52,32 @@ export function Story () {
     };
   }
 
-  const xScale = useMemo(() => {
-    const _xScale = scaleLinear();
-    _xScale.domain([0, 100]);
-    _xScale.range([0, chartWidth]);
-    return _xScale;
-  }, []);
-
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([0, 100 * (chartHeight / chartWidth)]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.domain([0, 1]);
+    _yScale.range([height, 0]);
     return _yScale;
   }, []);
+
+  const xScale = useMemo(() => {
+    const _xScale = scaleLinear();
+    // since the height is less than the width, base the width on the height and center the data within it.
+    const widthAdj = (1 - (width / height)) / 2;
+    _xScale.domain([0 + widthAdj, 1 - widthAdj]);
+    _xScale.range([0, width]);
+    return _xScale;
+  }, []);
+  const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
 
   const initialXScale = useRef(xScale.copy());
   const initialYScale = useRef(yScale.copy());
 
   const [scaleRev, bumpRev] = useRev();
+
   const {
     onPointerDown,
     onPointerUp,
     onWheelZoom,
-    gesture,
   } = usePanZoom({
     xScale,
     yScale,
@@ -119,16 +125,16 @@ export function Story () {
     scaleRev,
   });
 
+  const [hoveredPointIdx, setHoveredPointIdx] = useState(-1);
+
   return (
-    <>
+    <div>
       <p>
-        The <kbd>useTransform</kbd> hook allows you to transform a <kbd>g</kbd> group element with
-        <kbd>transform()</kbd> and <kbd>scale()</kbd>.
-        However, you must have a reference to the initial scales in order for a transformation to be calculated.
+        This is a reproduction of the d3 <a href="https://observablehq.com/@d3/delaunay-find-zoom" target="_blank">delaunay.find & zoom</a> example.
       </p>
       <div style={{
-        width: chartWidth,
-        height: chartHeight,
+        width: width,
+        height: height,
         border: '1px solid #666',
         position: 'relative',
       }}>
@@ -138,12 +144,13 @@ export function Story () {
         }}>
           <svg
             ref={setChartElement}
-            width={chartWidth}
-            height={chartHeight}
-            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
             style={{
               overflow: 'hidden',
               userSelect: 'none',
+              cursor: 'crosshair',
             }}
             onPointerDown={(e) => {
               // Only listen to primary button events (no right-clicks, etc).
@@ -184,100 +191,43 @@ export function Story () {
                 })),
               });
             }}
+            onPointerMove={(e) => {
+              updateChartOffset();
+              const dataX = xScale.invert(e.clientX - chartOffset.current.x);
+              const dataY = yScale.invert(e.clientY - chartOffset.current.y);
+              const i = delaunay.find(
+                dataX,
+                dataY,
+              );
+              setHoveredPointIdx(i);
+            }}
           >
-            <rect
-              x={0}
-              y={0}
-              width={chartWidth}
-              height={chartHeight}
-              fill="whitesmoke"
-            />
-
             <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
-              <rect
-                fill='antiquewhite'
-                stroke='#000'
-                strokeWidth={1.5}
-                x={100}
-                y={100}
-                width={600}
-                height={450}
-              />
-              <g transform='translate(220, 150) scale(0.5)'>
-                <image
-                  href={imageFile}
-                  x={50}
-                  y={50}
+              {data.map((d, i) => (
+                <circle
+                  key={i}
+                  cx={initialXScale.current(d[0])}
+                  cy={initialYScale.current(d[1])}
+                  r={1.5}
                 />
-              </g>
-              <circle
-                cx={150}
-                cy={180}
-                r={6}
-                fill='limegreen'
-              />
-              <circle
-                cx={200}
-                cy={450}
-                r={12}
-                fill='limegreen'
-              />
-              <circle
-                cx={610}
-                cy={200}
-                r={24}
-                fill='limegreen'
-              />
-              <circle
-                cx={610}
-                cy={450}
-                r={64}
-                fill='limegreen'
-              />
-
-              <text
-                dx={580}
-                dy={140}
-              >
-                inside the group
-              </text>
+              ))}
+              {/* The hovered point, above the rest */}
+              {hoveredPointIdx !== -1 ? (
+                <circle
+                  cx={initialXScale.current(data[hoveredPointIdx][0])}
+                  cy={initialYScale.current(data[hoveredPointIdx][1])}
+                  r={1.5}
+                  style={{
+                    stroke: 'orangered',
+                    fill: 'orangered',
+                  }}
+                />
+              ) : undefined}
             </g>
-
-
-            <text
-              dx={xScale(80)}
-              dy={yScale(47)}
-              textAnchor='middle'
-            >
-              outside the group
-            </text>
-            <circle
-              cx={xScale(80)}
-              cy={yScale(40)}
-              r={24}
-              fill='tomato'
-            />
-
-            <g transform={`translate(${xScale(85)}, ${yScale(43)}) scale(0.5)`}>
-              <image
-                href={imageFile}
-                x={0}
-                y={0}
-              />
-            </g>
-
-
-            {gesture.inProgress ? <>
-              <Pointers
-                pointers={gesture.pointerPositions}
-                edge={gesture.currentGestureBBox}
-              />
-            </> : null}
           </svg>
         </div>
       </div>
-    </>
+    </div>
   );
 }
-Story.storyName = 'Transforming grouped elements';
-
+DelaunayFindZoom.storyName = 'delaunay.find & zoom';

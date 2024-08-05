@@ -21,11 +21,11 @@
   "types": "./lib/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "start": "start-storybook -p 6007",
+    "start": "storybook dev -p 6007",
     "all": "FORCE_COLOR=1 run-p build chk test lint",
     "clean": "rimraf lib",
     "build": "tsc",
-    "build-storybook": "build-storybook",
+    "build-storybook": "storybook build",
     "chk": "FORCE_COLOR=1 run-p 'chk:*'",
     "chk:tsc-tests": "tsc -p src/specs/tsconfig.json",
     "chk:tsc-stories": "tsc -p src/stories/tsconfig.json",
@@ -33,7 +33,7 @@
     "test": "jest",
     "watch": "FORCE_COLOR=1 run-p 'watch:*'",
     "watch:ts": "tsc -w --preserveWatchOutput",
-    "storybook": "start-storybook -p 6006"
+    "storybook": "storybook dev -p 6006"
   },
   "peerDependencies": {
     "react": "*"
@@ -43,10 +43,10 @@
     "@babel/preset-env": "^7",
     "@babel/preset-react": "^7",
     "@babel/preset-typescript": "^7",
-    "@storybook/addon-actions": "^6",
-    "@storybook/builder-webpack5": "^6",
-    "@storybook/manager-webpack5": "^6",
-    "@storybook/react": "^6",
+    "@storybook/addon-actions": "^8.2.7",
+    "@storybook/addon-webpack5-compiler-babel": "^3.0.3",
+    "@storybook/react": "^8.2.7",
+    "@storybook/react-webpack5": "^8.2.7",
     "@types/d3-array": "^3",
     "@types/d3-delaunay": "^6",
     "@types/d3-dsv": "^3",
@@ -74,10 +74,12 @@
     "jest": "^28",
     "lodash": "^4",
     "npm-run-all": "^4",
+    "raw-loader": "^4",
     "react": "^18",
     "react-d3-axis-ts": "^1",
     "react-dom": "^18",
-    "rimraf": "^3",
+    "rimraf": "^6",
+    "storybook": "^8.2.7",
     "tsconfig-paths-webpack-plugin": "^4",
     "tween-functions-ts": "^1",
     "typescript": "^5",
@@ -85,5 +87,6 @@
   },
   "files": [
     "lib"
-  ]
+  ],
+  "packageManager": "pnpm@9.5.0"
 }

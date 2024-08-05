@@ -2,30 +2,32 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 
 module.exports = {
   stories: [
-    '../src/stories/01.stories.tsx', // default story
-    '../src/**/*.stories.mdx',
+    '../src/stories/01.stories.tsx',
     '../src/**/*.stories.@(js|jsx|ts|tsx)',
   ],
-  addons: [
-  ],
+
   features: {
-    storyStoreV7: true,
     buildStoriesJson: true,
     babelModeV7: true,
     modernInlineRender: true,
   },
-  framework: '@storybook/react',
+
+  framework: {
+    name: '@storybook/react-webpack5',
+    options: {}
+  },
+
   typescript: {
     check: false,
     checkOptions: {},
+    reactDocgen: 'react-docgen-typescript'
   },
-  core: {
-    builder: 'webpack5',
-  },
+
   babel: async () => {
     const babelConfig = require('../babel.config');
     return babelConfig();
   },
+
   webpackFinal: async (config) => {
     config.resolve.plugins ??= [];
     config.resolve.plugins.push(new TsconfigPathsPlugin({
@@ -38,4 +40,8 @@ module.exports = {
 
     return config;
   },
+
+  addons: ['@storybook/addon-webpack5-compiler-babel'],
+
+  disableWhatsNewNotifications: true,
 };

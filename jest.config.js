@@ -16,5 +16,5 @@ module.exports = {
   transform: {
     '\\.(j|t)sx?$': ['babel-jest', {rootMode: 'upward'}]
   },
-  transformIgnorePatterns: [`/node_modules/(?!${esModules})`],
+  transformIgnorePatterns: [`/node_modules/.pnpm/(?!${esModules})`],
 };

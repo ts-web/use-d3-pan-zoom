@@ -1,3 +1,9 @@
+# 1.1.4
+- Fixed glitch with Date scales.
+
+# 1.1.3
+- Removed stray `d3-delaunay` dependency from package.
+
 # 1.1.2
 - `registerMoveListener` is now optional, for advanced use cases.
 

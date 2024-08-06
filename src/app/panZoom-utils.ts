@@ -48,8 +48,8 @@ export function updateScales({
   const rangeOfNewXDomain = applyKTInverse(xScale.range(), xk, xt);
   const rangeOfNewYDomain = applyKTInverse(yScale.range(), yk, yt);
 
-  const newXDomain = rangeOfNewXDomain.map((xRangeVal) => initialXScale.invert(xRangeVal)) as [number, number];
-  const newYDomain = rangeOfNewYDomain.map((yRangeVal) => initialYScale.invert(yRangeVal)) as [number, number];
+  const newXDomain = rangeOfNewXDomain.map((xRangeVal) => initialXScale.invert(xRangeVal));
+  const newYDomain = rangeOfNewYDomain.map((yRangeVal) => initialYScale.invert(yRangeVal));
 
   const newXDomainClamped = increaseToSpan(minXSpan, decreaseToSpan(maxXSpan, newXDomain));
   const newYDomainClamped = increaseToSpan(minYSpan, decreaseToSpan(maxYSpan, newYDomain));
@@ -149,8 +149,8 @@ export function constrain ({
   xScale,
   yScale,
 }: {
-  xDomain: number[];
-  yDomain: number[];
+  xDomain: (number | Date)[];
+  yDomain: (number | Date)[];
   constraint: Partial<IBBox> | undefined;
   xScale: IScale;
   yScale: IScale;
@@ -163,8 +163,8 @@ export function constrain ({
   // and we can't easily adjust a domain that has been panned past the constraint edge,
   // because while we may know the distance past in domain values,
   // we can't simply subtract that value from both edges, because it's non-linear. This is pixel logic.
-  const newXRange = xDomain.map(xScale) as [number, number];
-  const newYRange = yDomain.map(yScale) as [number, number];
+  const newXRange = xDomain.map(xScale);
+  const newYRange = yDomain.map(yScale);
   const rangeConstraint = {
     xMin: domainConstraint.xMin === undefined ? -Infinity : xScale(domainConstraint.xMin),
     xMax: domainConstraint.xMax === undefined ? +Infinity : xScale(domainConstraint.xMax),
@@ -458,10 +458,10 @@ export function clampToSpan (
 
 export function increaseToSpan (
   minDomainSpan: number | undefined,
-  domain: [number, number],
-): [number, number] {
+  domain: (number | Date)[],
+): (number | Date)[] {
   if (minDomainSpan === undefined) return domain;
-  const [d0, d1] = domain;
+  const [d0, d1] = domain.map(Number);
   const dWidth = d1 - d0;
   // We only need to increase the width if it's less than the min width. So if it's greater than or equal, return.
   if (dWidth >= minDomainSpan) return domain;
@@ -471,10 +471,10 @@ export function increaseToSpan (
 
 export function decreaseToSpan (
   maxDomainSpan: number | undefined,
-  domain: [number, number],
-): [number, number] {
+  domain: (number | Date)[],
+): (number | Date)[] {
   if (maxDomainSpan === undefined) return domain;
-  const [d0, d1] = domain;
+  const [d0, d1] = domain.map(Number);
   const dWidth = d1 - d0;
   // We only need to decrease the width if it's greater than the max width. So if it's less than or equal, return.
   if (dWidth <= maxDomainSpan) return domain;

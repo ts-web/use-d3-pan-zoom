@@ -140,6 +140,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.5.4
+      use-resize-observer:
+        specifier: ^9.1.0
+        version: 9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       use-rev:
         specifier: ^1
         version: 1.0.4(react@18.3.1)
@@ -1081,6 +1084,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@juggle/resize-observer@3.4.0':
+    resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -4121,6 +4127,12 @@ packages:
     resolution: {integrity: sha512-oCwdVC7mTuWiPyjLUz/COz5TLk6wgp0RCsN+wHZ2Ekneac9w8uuV0njcbbie2ME+Vs+d6duwmYuR3HgQXs1fOg==}
     engines: {node: '>= 0.4'}
 
+  use-resize-observer@9.1.0:
+    resolution: {integrity: sha512-R25VqO9Wb3asSD4eqtcxk8sJalvIOYBqS8MNZlpDSQ4l4xMQxC/J7Id9HoTqPq8FwULIn0PVW+OAqF2dyYbjow==}
+    peerDependencies:
+      react: 16.8.0 - 18
+      react-dom: 16.8.0 - 18
+
   use-rev@1.0.4:
     resolution: {integrity: sha512-qyWrQnvcHnsMsCih38Uyw0Npq3c8mAd725Su2VvMuKNcm/j7XqeE+KLbQeuQ25o0A5VpU5PxsDh62LddnehWOA==}
     peerDependencies:
@@ -5463,6 +5475,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@juggle/resize-observer@3.4.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -9057,6 +9071,12 @@ snapshots:
     dependencies:
       punycode: 1.4.1
       qs: 6.13.0
+
+  use-resize-observer@9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      '@juggle/resize-observer': 3.4.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   use-rev@1.0.4(react@18.3.1):
     dependencies:

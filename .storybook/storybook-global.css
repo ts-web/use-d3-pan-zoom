@@ -1,0 +1,5 @@
+
+.sb-show-main {
+  /* Always show vertical scrollbars because resize observers may cause a scrollbar existential dillema glitch: when the scrollbar is present, the content doesn't overflow, but when the scrollbar is gone, the content overflows. */
+  overflow-y: scroll;
+}

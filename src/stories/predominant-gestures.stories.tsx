@@ -1,5 +1,6 @@
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom } from '~';
@@ -12,12 +13,10 @@ export default {
 };
 
 
-const chartWidth = 1000;
-const chartHeight = 600;
-
-
 export function Story_PredominantGestures () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -50,16 +49,23 @@ export function Story_PredominantGestures () {
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
     _xScale.domain([0, 100]);
-    _xScale.range([0, chartWidth]);
+    _xScale.range([0, 100]);
     return _xScale;
   }, []);
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([0, 100 * (chartHeight / chartWidth)]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.domain([0, 100]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
 
   const [, bumpRev] = useRev();
   const {
@@ -121,11 +127,10 @@ export function Story_PredominantGestures () {
       <p>
         In the chart below, use two fingers to do a vertical zoom, and then do a horizontal zoom. Arrows will appear indicating whether it's a vertical or horizontal gesture, or both.
       </p>
-      <div style={{
-        width: chartWidth,
-        height: chartHeight,
-        border: '1px solid #666',
-        position: 'relative',
+      <div ref={ref} style={{
+        border: '1px solid #ddd',
+        lineHeight: 0,
+        maxWidth: 800,
       }}>
         <svg
           ref={setChartElement}

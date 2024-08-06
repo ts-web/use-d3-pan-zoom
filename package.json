@@ -83,6 +83,7 @@
     "tsconfig-paths-webpack-plugin": "^4",
     "tween-functions-ts": "^1",
     "typescript": "^5",
+    "use-resize-observer": "^9.1.0",
     "use-rev": "^1"
   },
   "files": [

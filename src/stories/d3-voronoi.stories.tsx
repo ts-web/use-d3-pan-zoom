@@ -3,6 +3,7 @@ import { scaleLinear } from 'd3-scale';
 import uniqueId from 'lodash/uniqueId';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom, useTransform } from '~';
@@ -17,15 +18,15 @@ export default {
 };
 
 // Specify the chart’s dimensions.
-const width = 928;
-const height = 500;
 const marginTop = 0;
-const marginRight = 10;
+const marginRight = 0;
 const marginBottom = 20;
 const marginLeft = 30;
 
 export function VoronoiChart () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -58,22 +59,33 @@ export function VoronoiChart () {
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
     _yScale.domain([0, 1]);
-    _yScale.range([height - marginBottom, marginTop]);
+    _yScale.range([100 - marginBottom, marginTop]);
     return _yScale;
   }, []);
 
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
-    // since the height is less than the width, base the width on the height and center the data within it.
-    const widthAdj = (1 - (width / height)) / 2;
-    _xScale.domain([0 + widthAdj, 1 - widthAdj]);
-    _xScale.range([marginLeft, width - marginRight]);
+    _xScale.domain([0, 1]);
+    _xScale.range([marginLeft, 100 - marginRight]);
     return _xScale;
   }, []);
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
 
   const initialXScale = useRef(xScale.copy());
   const initialYScale = useRef(yScale.copy());
+
+  useEffect(() => {
+    xScale.range([marginLeft, chartWidth - marginRight]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight - marginBottom, marginTop]);
+  }, [chartHeight, yScale]);
+  useEffect(() => {
+    initialXScale.current.range([marginLeft, chartWidth - marginRight]);
+  }, [chartWidth]);
+  useEffect(() => {
+    initialYScale.current.range([chartHeight - marginBottom, marginTop]);
+  }, [chartHeight]);
 
   const [scaleRev, bumpRev] = useRev();
 
@@ -139,7 +151,7 @@ export function VoronoiChart () {
 
   const voronoiD = Delaunay
     .from(scaledPositions)
-    .voronoi([35, 0, width, height - 25])
+    .voronoi([marginLeft, 0, chartWidth, chartHeight - marginBottom])
     .render()
   ;
 
@@ -148,120 +160,114 @@ export function VoronoiChart () {
       <p>
         This is a reproduction of the d3 <a href='https://observablehq.com/@d3/x-y-zoom' target='_blank'>X/Y Zoom</a> example.
       </p>
-      <div style={{
-        width: width,
-        height: height,
-        border: '1px solid #666',
-        position: 'relative',
+      <div ref={ref} style={{
+        border: '1px solid #ddd',
+        lineHeight: 0,
+        maxWidth: 800,
       }}>
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-        }}>
-          <svg
-            ref={setChartElement}
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            style={{
-              overflow: 'hidden',
-              userSelect: 'none',
-            }}
-            onPointerDown={(e) => {
-              // Only listen to primary button events (no right-clicks, etc).
-              if (e.button !== 0) return;
-              // Take note of the chart's on-screen position when the gesture starts.
-              updateChartOffset();
-              // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
-              e.currentTarget.setPointerCapture(e.pointerId);
-              // Report a pointer down, passing coordinates relative to the chart.
-              onPointerDown(e.pointerId, {
+        <svg
+          ref={setChartElement}
+          width={chartWidth}
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          style={{
+            overflow: 'hidden',
+            userSelect: 'none',
+          }}
+          onPointerDown={(e) => {
+            // Only listen to primary button events (no right-clicks, etc).
+            if (e.button !== 0) return;
+            // Take note of the chart's on-screen position when the gesture starts.
+            updateChartOffset();
+            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
+            e.currentTarget.setPointerCapture(e.pointerId);
+            // Report a pointer down, passing coordinates relative to the chart.
+            onPointerDown(e.pointerId, {
+              x: e.clientX - chartOffset.current.x,
+              y: e.clientY - chartOffset.current.y,
+            });
+          }}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+            onPointerUp(e.pointerId);
+          }}
+          onPointerLeave={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onPointerCancel={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onWheel={(e) => {
+            // Take note of the chart's on-screen position.
+            updateChartOffset();
+            // Report a wheel zoom event, passing coordinates relative to the chart.
+            onWheelZoom({
+              center: {
                 x: e.clientX - chartOffset.current.x,
                 y: e.clientY - chartOffset.current.y,
-              });
-            }}
-            onPointerUp={(e) => {
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              onPointerUp(e.pointerId);
-            }}
-            onPointerLeave={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onPointerCancel={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onWheel={(e) => {
-              // Take note of the chart's on-screen position.
-              updateChartOffset();
-              // Report a wheel zoom event, passing coordinates relative to the chart.
-              onWheelZoom({
-                center: {
-                  x: e.clientX - chartOffset.current.x,
-                  y: e.clientY - chartOffset.current.y,
-                },
-                zoomRatio: Math.pow(2, normalizeWheelDelta({
-                  delta: e.deltaY,
-                  deltaMode: e.deltaMode,
-                  multiplier: e.ctrlKey ? 10 : 1,
-                })),
-              });
-            }}
-          >
-            <clipPath id={clipId}>
-              <rect
-                x={marginLeft}
-                y={marginTop}
-                width={width - marginLeft - marginRight}
-                height={height - marginTop - marginBottom}
-              />
-            </clipPath>
-            <clipPath id={xAxisClipId}>
-              <rect
-                x={marginLeft}
-                y={height - marginBottom}
-                width={width - marginLeft - marginRight}
-                height={marginBottom}
-              />
-            </clipPath>
-            <g transform={`translate(${marginLeft}, 0)`}>
+              },
+              zoomRatio: Math.pow(2, normalizeWheelDelta({
+                delta: e.deltaY,
+                deltaMode: e.deltaMode,
+                multiplier: e.ctrlKey ? 10 : 1,
+              })),
+            });
+          }}
+        >
+          <clipPath id={clipId}>
+            <rect
+              x={marginLeft}
+              y={marginTop}
+              width={chartWidth - marginLeft - marginRight}
+              height={chartHeight - marginTop - marginBottom}
+            />
+          </clipPath>
+          <clipPath id={xAxisClipId}>
+            <rect
+              x={marginLeft}
+              y={chartHeight - marginBottom}
+              width={chartWidth - marginLeft - marginRight}
+              height={marginBottom}
+            />
+          </clipPath>
+          <g transform={`translate(${marginLeft}, 0)`}>
+            <Axis
+              orient='left'
+              scale={yScale}
+              scaleRev={scaleRev}
+              tickArguments={[12 * (chartHeight / chartWidth)]}
+            />
+          </g>
+          <g clipPath={`url(#${xAxisClipId})`}>
+            <g transform={`translate(0, ${chartHeight - marginBottom})`}>
               <Axis
-                orient='left'
-                scale={yScale}
+                orient='bottom'
+                scale={xScale}
                 scaleRev={scaleRev}
-                tickArguments={[12 * (height / width)]}
+                tickArguments={[12]}
               />
             </g>
-            <g clipPath={`url(#${xAxisClipId})`}>
-              <g transform={`translate(0, ${height - marginBottom})`}>
-                <Axis
-                  orient='bottom'
-                  scale={xScale}
-                  scaleRev={scaleRev}
-                  tickArguments={[12]}
+          </g>
+          <g clipPath={`url(#${clipId})`}>
+            <path
+              d={voronoiD}
+              fill='none'
+              stroke='#ccc'
+              strokeWidth={0.5}
+            />
+            <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
+              {data.map((d, i) => (
+                <ellipse key={i}
+                  fill={orangeColors100[i]}
+                  cx={initialXScale.current(d[0])}
+                  cy={initialYScale.current(d[1])}
+                  rx={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
+                  ry={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
                 />
-              </g>
+              ))}
             </g>
-            <g clipPath={`url(#${clipId})`}>
-              <path
-                d={voronoiD}
-                fill='none'
-                stroke='#ccc'
-                strokeWidth={0.5}
-              />
-              <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
-                {data.map((d, i) => (
-                  <ellipse key={i}
-                    fill={orangeColors100[i]}
-                    cx={initialXScale.current(d[0])}
-                    cy={initialYScale.current(d[1])}
-                    rx={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
-                    ry={6 * (1 / Math.sqrt(Math.max(kx, ky)))}
-                  />
-                ))}
-              </g>
-            </g>
-          </svg>
-        </div>
+          </g>
+        </svg>
       </div>
       <p>
         This uses <kbd>d3-delaunay</kbd> to generate voronoi lines on-the-fly. This is especially visible when using a multi-finger gesture to distort the chart.

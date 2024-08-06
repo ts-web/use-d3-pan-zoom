@@ -1,5 +1,6 @@
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { useTransform, usePanZoom, normalizeWheelDelta } from '~';
@@ -11,14 +12,12 @@ export default {
   title: 'D3 Examples',
 };
 
-// Specify the chart’s dimensions.
-const width = 928;
-const height = 500;
-
 const data = randomNormalPoints2K;
 
 export function ZoomSVG () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -51,22 +50,33 @@ export function ZoomSVG () {
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
     _yScale.domain([0, 1]);
-    _yScale.range([height, 0]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
 
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
-    // since the height is less than the width, base the width on the height and center the data within it.
-    const widthAdj = (1 - (width / height)) / 2;
-    _xScale.domain([0 + widthAdj, 1 - widthAdj]);
-    _xScale.range([0, width]);
+    _xScale.domain([0, 1]);
+    _xScale.range([0, 100]);
     return _xScale;
   }, []);
   const xScaleRef = useRef(xScale); xScaleRef.current = xScale;
 
   const initialXScale = useRef(xScale.copy());
   const initialYScale = useRef(yScale.copy());
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
+  useEffect(() => {
+    initialXScale.current.range([0, chartWidth]);
+  }, [chartWidth]);
+  useEffect(() => {
+    initialYScale.current.range([chartHeight, 0]);
+  }, [chartHeight]);
 
   const [scaleRev, bumpRev] = useRev();
 
@@ -127,77 +137,71 @@ export function ZoomSVG () {
       <p>
         This is a reproduction of the d3 <a href="https://observablehq.com/@d3/zoom" target="_blank">Zoom (SVG)</a> example.
       </p>
-      <div style={{
-        width: width,
-        height: height,
-        border: '1px solid #666',
-        position: 'relative',
+      <div ref={ref} style={{
+        border: '1px solid #ddd',
+        lineHeight: 0,
+        maxWidth: 800,
       }}>
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-        }}>
-          <svg
-            ref={setChartElement}
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            style={{
-              overflow: 'hidden',
-              userSelect: 'none',
-            }}
-            onPointerDown={(e) => {
-              // Only listen to primary button events (no right-clicks, etc).
-              if (e.button !== 0) return;
-              // Take note of the chart's on-screen position when the gesture starts.
-              updateChartOffset();
-              // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
-              e.currentTarget.setPointerCapture(e.pointerId);
-              // Report a pointer down, passing coordinates relative to the chart.
-              onPointerDown(e.pointerId, {
+        <svg
+          ref={setChartElement}
+          width={chartWidth}
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          style={{
+            overflow: 'hidden',
+            userSelect: 'none',
+          }}
+          onPointerDown={(e) => {
+            // Only listen to primary button events (no right-clicks, etc).
+            if (e.button !== 0) return;
+            // Take note of the chart's on-screen position when the gesture starts.
+            updateChartOffset();
+            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
+            e.currentTarget.setPointerCapture(e.pointerId);
+            // Report a pointer down, passing coordinates relative to the chart.
+            onPointerDown(e.pointerId, {
+              x: e.clientX - chartOffset.current.x,
+              y: e.clientY - chartOffset.current.y,
+            });
+          }}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+            onPointerUp(e.pointerId);
+          }}
+          onPointerLeave={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onPointerCancel={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onWheel={(e) => {
+            // Take note of the chart's on-screen position.
+            updateChartOffset();
+            // Report a wheel zoom event, passing coordinates relative to the chart.
+            onWheelZoom({
+              center: {
                 x: e.clientX - chartOffset.current.x,
                 y: e.clientY - chartOffset.current.y,
-              });
-            }}
-            onPointerUp={(e) => {
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              onPointerUp(e.pointerId);
-            }}
-            onPointerLeave={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onPointerCancel={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onWheel={(e) => {
-              // Take note of the chart's on-screen position.
-              updateChartOffset();
-              // Report a wheel zoom event, passing coordinates relative to the chart.
-              onWheelZoom({
-                center: {
-                  x: e.clientX - chartOffset.current.x,
-                  y: e.clientY - chartOffset.current.y,
-                },
-                zoomRatio: Math.pow(2, normalizeWheelDelta({
-                  delta: e.deltaY,
-                  deltaMode: e.deltaMode,
-                  multiplier: e.ctrlKey ? 10 : 1,
-                })),
-              });
-            }}
-          >
-            <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
-              {data.map((d, i) => (
-                <circle
-                  key={i}
-                  cx={initialXScale.current(d[0])}
-                  cy={initialYScale.current(d[1])}
-                  r={1.5}
-                />
-              ))}
-            </g>
-          </svg>
-        </div>
+              },
+              zoomRatio: Math.pow(2, normalizeWheelDelta({
+                delta: e.deltaY,
+                deltaMode: e.deltaMode,
+                multiplier: e.ctrlKey ? 10 : 1,
+              })),
+            });
+          }}
+        >
+          <g transform={`translate(${tx}, ${ty}) scale(${kx}, ${ky})`}>
+            {data.map((d, i) => (
+              <circle
+                key={i}
+                cx={initialXScale.current(d[0])}
+                cy={initialYScale.current(d[1])}
+                r={1.5}
+              />
+            ))}
+          </g>
+        </svg>
       </div>
     </div>
   );

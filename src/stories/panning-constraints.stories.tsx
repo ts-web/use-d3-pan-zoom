@@ -1,6 +1,7 @@
 import { scalePow } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom, type IBBox, type IScale } from '~';
@@ -11,12 +12,10 @@ export default {
 };
 
 
-const chartWidth = 1000;
-const chartHeight = 600;
-
-
 export function Story_PanningConstraints () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -51,16 +50,23 @@ export function Story_PanningConstraints () {
     const _xScale = scalePow();
     _xScale.exponent(2);
     _xScale.domain([0, 100]);
-    _xScale.range([0, chartWidth]);
+    _xScale.range([0, 100]);
     return _xScale;
   }, []);
   const yScale = useMemo(() => {
     const _yScale = scalePow();
     _yScale.exponent(2);
     _yScale.domain([0, 100]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
 
   // Constrain the chart to a certain range.
   const constrain = {
@@ -103,11 +109,10 @@ export function Story_PanningConstraints () {
     <p>
       This chart uses the <kbd>constrain</kbd> option to define a fence (in domain values) that the user cannot pan or zoom out of. Zoom out to see the red border of the constraint bounds.
     </p>
-    <div style={{
-      width: chartWidth,
-      height: chartHeight,
-      border: '1px solid #666',
-      position: 'relative',
+    <div ref={ref} style={{
+      border: '1px solid #ddd',
+      lineHeight: 0,
+      maxWidth: 800,
     }}>
       <svg
         ref={setChartElement}

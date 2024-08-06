@@ -1,3 +1,5 @@
+import './storybook-global.css';
+
 export const parameters = {
   controls: {
     matchers: {

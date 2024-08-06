@@ -191,7 +191,7 @@ export function MyChart () {
     <div style={{
       width: chartWidth,
       height: chartHeight,
-      border: '1px solid #666',
+      border: '1px solid #ddd',
     }}>
       <svg
         ref={setChartElement}

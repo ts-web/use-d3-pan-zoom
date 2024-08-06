@@ -1,6 +1,7 @@
 import { scalePow } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom, type IScale } from '~';
@@ -12,12 +13,10 @@ export default {
 };
 
 
-const chartWidth = 1000;
-const chartHeight = 600;
-
-
 export function Story_ZoomConstraints () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -51,7 +50,7 @@ export function Story_ZoomConstraints () {
     const _xScale = scalePow();
     _xScale.exponent(2);
     _xScale.domain([0, 100]);
-    _xScale.range([0, chartWidth]);
+    _xScale.range([0, 100]);
     return _xScale;
   }, []);
 
@@ -59,9 +58,16 @@ export function Story_ZoomConstraints () {
     const _yScale = scalePow();
     _yScale.exponent(2);
     _yScale.domain([0, 100]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
 
   const [scaleRev, bumpRev] = useRev();
   const {
@@ -123,163 +129,157 @@ export function Story_ZoomConstraints () {
     <p>
       This uses a non-linear chart using an exponential <kbd>scalePow</kbd> scale, so the pixel size of a min/max zoom span will change as you pan. Notice the centered gray "Min Zoom" rectangle changing size as you move along the scale.
     </p>
-    <div style={{
-      width: chartWidth,
-      height: chartHeight,
-      border: '1px solid #666',
-      position: 'relative',
+    <div ref={ref} style={{
+      border: '1px solid #ddd',
+      lineHeight: 0,
+      maxWidth: 800,
     }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-      }}>
-        <svg
-          ref={setChartElement}
-          width={chartWidth}
-          height={chartHeight}
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          style={{
-            overflow: 'hidden',
-            userSelect: 'none',
-          }}
-          onPointerDown={(e) => {
-            // Only listen to primary button events (no right-clicks, etc).
-            if (e.button !== 0) return;
-            // Take note of the chart's on-screen position when the gesture starts.
-            updateChartOffset();
-            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
-            e.currentTarget.setPointerCapture(e.pointerId);
-            // Report a pointer down, passing coordinates relative to the chart.
-            onPointerDown(e.pointerId, {
+      <svg
+        ref={setChartElement}
+        width={chartWidth}
+        height={chartHeight}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        style={{
+          overflow: 'hidden',
+          userSelect: 'none',
+        }}
+        onPointerDown={(e) => {
+          // Only listen to primary button events (no right-clicks, etc).
+          if (e.button !== 0) return;
+          // Take note of the chart's on-screen position when the gesture starts.
+          updateChartOffset();
+          // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
+          e.currentTarget.setPointerCapture(e.pointerId);
+          // Report a pointer down, passing coordinates relative to the chart.
+          onPointerDown(e.pointerId, {
+            x: e.clientX - chartOffset.current.x,
+            y: e.clientY - chartOffset.current.y,
+          });
+        }}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          onPointerUp(e.pointerId);
+        }}
+        onPointerLeave={(e) => {
+          onPointerUp(e.pointerId);
+        }}
+        onPointerCancel={(e) => {
+          onPointerUp(e.pointerId);
+        }}
+        onWheel={(e) => {
+          // Take note of the chart's on-screen position.
+          updateChartOffset();
+          // Report a wheel zoom event, passing coordinates relative to the chart.
+          onWheelZoom({
+            center: {
               x: e.clientX - chartOffset.current.x,
               y: e.clientY - chartOffset.current.y,
-            });
-          }}
-          onPointerUp={(e) => {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-            onPointerUp(e.pointerId);
-          }}
-          onPointerLeave={(e) => {
-            onPointerUp(e.pointerId);
-          }}
-          onPointerCancel={(e) => {
-            onPointerUp(e.pointerId);
-          }}
-          onWheel={(e) => {
-            // Take note of the chart's on-screen position.
-            updateChartOffset();
-            // Report a wheel zoom event, passing coordinates relative to the chart.
-            onWheelZoom({
-              center: {
-                x: e.clientX - chartOffset.current.x,
-                y: e.clientY - chartOffset.current.y,
-              },
-              zoomRatio: Math.pow(2, normalizeWheelDelta({
-                delta: e.deltaY,
-                deltaMode: e.deltaMode,
-                multiplier: e.ctrlKey ? 10 : 1,
-              })),
-            });
-          }}
-        >
-          <rect
-            x={0}
-            y={0}
-            width={chartWidth}
-            height={chartHeight}
-            fill="whitesmoke"
+            },
+            zoomRatio: Math.pow(2, normalizeWheelDelta({
+              delta: e.deltaY,
+              deltaMode: e.deltaMode,
+              multiplier: e.ctrlKey ? 10 : 1,
+            })),
+          });
+        }}
+      >
+        <rect
+          x={0}
+          y={0}
+          width={chartWidth}
+          height={chartHeight}
+          fill="whitesmoke"
+        />
+        <g transform={`translate(${chartWidth}, 0)`}>
+          <Axis
+            orient="left"
+            scale={yScale}
+            tickArguments={[10]}
+            color="#f99"
+            tickSizeInner={chartWidth - 40}
+            tickSizeOuter={chartWidth - 40}
+            scaleRev={scaleRev}
           />
-          <g transform={`translate(${chartWidth}, 0)`}>
-            <Axis
-              orient="left"
-              scale={yScale}
-              tickArguments={[10]}
-              color="#f99"
-              tickSizeInner={chartWidth - 40}
-              tickSizeOuter={chartWidth - 40}
-              scaleRev={scaleRev}
-            />
-          </g>
-          <g transform={`translate(0, ${chartHeight})`}>
-            <Axis
-              orient="top"
-              scale={xScale}
-              tickArguments={[10]}
-              color="#99f"
-              tickSizeInner={chartHeight - 40}
-              tickSizeOuter={chartHeight - 40}
-              scaleRev={scaleRev}
-            />
-          </g>
-          {gesture.inProgress ? (
-            <g transform={`translate(20, 40)`}>
-              <rect
-                x={0}
-                y={0}
-                width={100}
-                height={24}
-                fill="tomato"
-              />
-              <text dx={5} dy={16} style={{fill: 'white'}}>
-                gesture active
-              </text>
-            </g>
-          ) : null}
-          <circle fill="orange" r={20}
-            cx={xScale(30)}
-            cy={yScale(30)}
+        </g>
+        <g transform={`translate(0, ${chartHeight})`}>
+          <Axis
+            orient="top"
+            scale={xScale}
+            tickArguments={[10]}
+            color="#99f"
+            tickSizeInner={chartHeight - 40}
+            tickSizeOuter={chartHeight - 40}
+            scaleRev={scaleRev}
           />
-          <circle fill="rgba(0, 0, 0, 0.25)" r={20}
-            cx={xScale(50)}
-            cy={yScale(50)}
-          />
-          <circle fill="crimson" r={20}
-            cx={xScale(30)}
-            cy={yScale(70)}
-          />
-          <circle fill="peachpuff" r={20}
-            cx={xScale(70)}
-            cy={yScale(30)}
-          />
-          <circle fill="springgreen" r={20}
-            cx={xScale(70)}
-            cy={yScale(70)}
-          />
-          {gesture.minZoom?.xSpan && gesture.minZoom.ySpan ? (
-            <ZoomConstraint
-              domainX={xScale.invert(chartWidth / 2)}
-              domainY={yScale.invert(chartHeight / 2)}
-              domainXSpan={gesture.minZoom.xSpan}
-              domainYSpan={gesture.minZoom.ySpan}
-              xScale={xScale}
-              yScale={yScale}
-              fill={'#44555530'}
-              stroke={'#666'}
-              label='Min Zoom'
-            />
-          ) : null}
-          {/* Current zoom span (domain) */}
+        </g>
+        {gesture.inProgress ? (
           <g transform={`translate(20, 40)`}>
             <rect
               x={0}
               y={0}
-              width={220}
-              height={50}
-              fill="white"
-              stroke="#666"
-              strokeWidth={2}
-              rx={2}
-              ry={2}
+              width={100}
+              height={24}
+              fill="tomato"
             />
-            <text dx={5} dy={20} style={{fill: '#333'}}>
-              zoom span X: {Math.floor(getWidth(...xScale.domain()))} (max: {gesture.maxZoom!.xSpan})
-            </text>
-            <text dx={5} dy={40} style={{fill: '#333'}}>
-              zoom span Y: {Math.floor(getWidth(...yScale.domain()))} (max: {gesture.maxZoom!.ySpan})
+            <text dx={5} dy={16} style={{fill: 'white'}}>
+              gesture active
             </text>
           </g>
-        </svg>
-      </div>
+        ) : null}
+        <circle fill="orange" r={20}
+          cx={xScale(30)}
+          cy={yScale(30)}
+        />
+        <circle fill="rgba(0, 0, 0, 0.25)" r={20}
+          cx={xScale(50)}
+          cy={yScale(50)}
+        />
+        <circle fill="crimson" r={20}
+          cx={xScale(30)}
+          cy={yScale(70)}
+        />
+        <circle fill="peachpuff" r={20}
+          cx={xScale(70)}
+          cy={yScale(30)}
+        />
+        <circle fill="springgreen" r={20}
+          cx={xScale(70)}
+          cy={yScale(70)}
+        />
+        {gesture.minZoom?.xSpan && gesture.minZoom.ySpan ? (
+          <ZoomConstraint
+            domainX={xScale.invert(chartWidth / 2)}
+            domainY={yScale.invert(chartHeight / 2)}
+            domainXSpan={gesture.minZoom.xSpan}
+            domainYSpan={gesture.minZoom.ySpan}
+            xScale={xScale}
+            yScale={yScale}
+            fill={'#44555530'}
+            stroke={'#666'}
+            label='Min Zoom'
+          />
+        ) : null}
+        {/* Current zoom span (domain) */}
+        <g transform={`translate(20, 40)`}>
+          <rect
+            x={0}
+            y={0}
+            width={220}
+            height={50}
+            fill="white"
+            stroke="#666"
+            strokeWidth={2}
+            rx={2}
+            ry={2}
+          />
+          <text dx={5} dy={20} style={{fill: '#333'}}>
+            zoom span X: {Math.floor(getWidth(...xScale.domain()))} (max: {gesture.maxZoom!.xSpan})
+          </text>
+          <text dx={5} dy={40} style={{fill: '#333'}}>
+            zoom span Y: {Math.floor(getWidth(...yScale.domain()))} (max: {gesture.maxZoom!.ySpan})
+          </text>
+        </g>
+      </svg>
     </div>
   </>;
 }

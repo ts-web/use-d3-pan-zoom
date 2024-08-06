@@ -3,6 +3,7 @@ import { scaleLinear, scaleOrdinal } from 'd3-scale';
 import { schemeCategory10 } from 'd3-scale-chromatic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom } from '~';
@@ -11,10 +12,6 @@ import { normalizeWheelDelta, usePanZoom } from '~';
 export default {
   title: 'D3 Examples',
 };
-
-const chartWidth = 800;
-const chartHeight = 600;
-const k = chartHeight / chartWidth;
 
 const data = (() => {
   const random = randomNormal(0, 0.2);
@@ -32,6 +29,8 @@ const colorScale = scaleOrdinal<string>()
 
 export function ZoomableScatterplot () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -64,16 +63,23 @@ export function ZoomableScatterplot () {
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
     _xScale.domain([-4.5, 4.5]);
-    _xScale.range([0, chartWidth]);
+    _xScale.range([0, 100]);
     return _xScale;
   }, []);
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
-    _yScale.domain([-4.5 * k, 4.5 * k]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.domain([-4.5, 4.5]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
 
   const [scaleRev, bumpRev] = useRev();
   const {
@@ -125,100 +131,94 @@ export function ZoomableScatterplot () {
       <p>
         This is a reproduction of the d3 <a href="https://observablehq.com/@d3/zoomable-scatterplot" target="_blank">Zoomable Scatterplot</a> example.
       </p>
-      <div style={{
-        width: chartWidth,
-        height: chartHeight,
-        border: '1px solid #666',
-        position: 'relative',
+      <div ref={ref} style={{
+        border: '1px solid #ddd',
+        lineHeight: 0,
+        maxWidth: 800,
       }}>
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-        }}>
-          <svg
-            ref={setChartElement}
-            width={chartWidth}
-            height={chartHeight}
-            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-            style={{
-              overflow: 'hidden',
-              userSelect: 'none',
-            }}
-            onPointerDown={(e) => {
-              // Only listen to primary button events (no right-clicks, etc).
-              if (e.button !== 0) return;
-              // Take note of the chart's on-screen position when the gesture starts.
-              updateChartOffset();
-              // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
-              e.currentTarget.setPointerCapture(e.pointerId);
-              // Report a pointer down, passing coordinates relative to the chart.
-              onPointerDown(e.pointerId, {
+        <svg
+          ref={setChartElement}
+          width={chartWidth}
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          style={{
+            overflow: 'hidden',
+            userSelect: 'none',
+          }}
+          onPointerDown={(e) => {
+            // Only listen to primary button events (no right-clicks, etc).
+            if (e.button !== 0) return;
+            // Take note of the chart's on-screen position when the gesture starts.
+            updateChartOffset();
+            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
+            e.currentTarget.setPointerCapture(e.pointerId);
+            // Report a pointer down, passing coordinates relative to the chart.
+            onPointerDown(e.pointerId, {
+              x: e.clientX - chartOffset.current.x,
+              y: e.clientY - chartOffset.current.y,
+            });
+          }}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+            onPointerUp(e.pointerId);
+          }}
+          onPointerLeave={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onPointerCancel={(e) => {
+            onPointerUp(e.pointerId);
+          }}
+          onWheel={(e) => {
+            // Take note of the chart's on-screen position.
+            updateChartOffset();
+            // Report a wheel zoom event, passing coordinates relative to the chart.
+            onWheelZoom({
+              center: {
                 x: e.clientX - chartOffset.current.x,
                 y: e.clientY - chartOffset.current.y,
-              });
-            }}
-            onPointerUp={(e) => {
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              onPointerUp(e.pointerId);
-            }}
-            onPointerLeave={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onPointerCancel={(e) => {
-              onPointerUp(e.pointerId);
-            }}
-            onWheel={(e) => {
-              // Take note of the chart's on-screen position.
-              updateChartOffset();
-              // Report a wheel zoom event, passing coordinates relative to the chart.
-              onWheelZoom({
-                center: {
-                  x: e.clientX - chartOffset.current.x,
-                  y: e.clientY - chartOffset.current.y,
-                },
-                zoomRatio: Math.pow(2, normalizeWheelDelta({
-                  delta: e.deltaY,
-                  deltaMode: e.deltaMode,
-                  multiplier: e.ctrlKey ? 10 : 1,
-                })),
-              });
-            }}
-          >
-            <g fill="none" stroke-linecap="round" stroke-width="1.1000555909229373">
-              {data.map((d, i) => (
-                <path key={i}
-                  d={`M${xScale(d[0])},${yScale(d[1])}h0`}
-                  stroke={colorScale(d[2] as unknown as string)}
-                  strokeWidth={5}
-                />
-              ))}
-            </g>
-            <g transform={`translate(${chartWidth}, 0)`}>
-              <Axis
-                orient="left"
-                scale={yScale}
-                tickArguments={[12]}
-                color='#1b1e23'
-                strokeColor='rgba(0, 0, 0, 0.1)'
-                tickSizeInner={chartWidth - 40}
-                tickSizeOuter={chartWidth - 40}
-                scaleRev={scaleRev}
+              },
+              zoomRatio: Math.pow(2, normalizeWheelDelta({
+                delta: e.deltaY,
+                deltaMode: e.deltaMode,
+                multiplier: e.ctrlKey ? 10 : 1,
+              })),
+            });
+          }}
+        >
+          <g fill="none" strokeLinecap="round" strokeWidth="1.1000555909229373">
+            {data.map((d, i) => (
+              <path key={i}
+                d={`M${xScale(d[0])},${yScale(d[1])}h0`}
+                stroke={colorScale(d[2] as unknown as string)}
+                strokeWidth={5}
               />
-            </g>
-            <g transform={'translate(0, 0)'}>
-              <Axis
-                orient="bottom"
-                scale={xScale}
-                tickArguments={[12 * k]}
-                color='#1b1e23'
-                strokeColor='rgba(0, 0, 0, 0.1)'
-                tickSizeInner={chartHeight - 20}
-                tickSizeOuter={chartHeight - 20}
-                scaleRev={scaleRev}
-              />
-            </g>
-          </svg>
-        </div>
+            ))}
+          </g>
+          <g transform={`translate(${chartWidth}, 0)`}>
+            <Axis
+              orient="left"
+              scale={yScale}
+              tickArguments={[12]}
+              color='#1b1e23'
+              strokeColor='rgba(0, 0, 0, 0.1)'
+              tickSizeInner={chartWidth - 40}
+              tickSizeOuter={chartWidth - 40}
+              scaleRev={scaleRev}
+            />
+          </g>
+          <g transform={'translate(0, 0)'}>
+            <Axis
+              orient="bottom"
+              scale={xScale}
+              tickArguments={[12]}
+              color='#1b1e23'
+              strokeColor='rgba(0, 0, 0, 0.1)'
+              tickSizeInner={chartHeight - 20}
+              tickSizeOuter={chartHeight - 20}
+              scaleRev={scaleRev}
+            />
+          </g>
+        </svg>
       </div>
     </div>
   );

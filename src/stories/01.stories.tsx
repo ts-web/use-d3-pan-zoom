@@ -1,6 +1,7 @@
 import { scaleLinear } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
+import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom } from '~';
@@ -13,11 +14,6 @@ export default {
   title: 'usePanZoom',
 };
 
-const chartWidth = 800;
-const chartHeight = 600;
-const yDomain = 1000;
-const xDomain = yDomain * (chartWidth / chartHeight);
-
 const imageX = 450;
 const imageY = 200;
 const imageWidth = 400;
@@ -26,6 +22,10 @@ const imageHeight = 600;
 
 export function Story () {
   const [chartElement, setChartElement] = useState<Element | null>();
+  const {ref, width: chartWidth = 100} = useResizeObserver<HTMLDivElement>();
+  const chartHeight = chartWidth;
+  const yDomain = 1000;
+  const xDomain = yDomain * (chartWidth / chartHeight);
 
   // When the chartElement is resolved, prevent the default action of certain events:
   //   - touchstart — or else touch events on the chart will sometimes get intercepted by the browser for scrolling, page navigation ("swipe"), or full-page pixelated zooming.
@@ -58,16 +58,23 @@ export function Story () {
   const xScale = useMemo(() => {
     const _xScale = scaleLinear();
     _xScale.domain([0, xDomain]);
-    _xScale.range([0, chartWidth]);
+    _xScale.range([0, 100]);
     return _xScale;
-  }, []);
+  }, [xDomain]);
 
   const yScale = useMemo(() => {
     const _yScale = scaleLinear();
     _yScale.domain([0, yDomain]);
-    _yScale.range([chartHeight, 0]);
+    _yScale.range([100, 0]);
     return _yScale;
   }, []);
+
+  useEffect(() => {
+    xScale.range([0, chartWidth]);
+  }, [chartWidth, xScale]);
+  useEffect(() => {
+    yScale.range([chartHeight, 0]);
+  }, [chartHeight, yScale]);
 
   const [scaleRev, bumpRev] = useRev();
   const {
@@ -125,123 +132,117 @@ export function Story () {
     <p>
       Note: this chart uses <kbd>preserveAspectRatio</kbd>. See the <kbd>useTransform</kbd> page for a similar example without <kbd>preserveAspectRatio</kbd>.
     </p>
-    <div style={{
-      width: chartWidth,
-      height: chartHeight,
-      border: '1px solid #666',
-      position: 'relative',
+    <div ref={ref} style={{
+      border: '1px solid #ddd',
+      lineHeight: 0,
+      maxWidth: 800,
     }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-      }}>
-        <svg
-          ref={setChartElement}
-          width={chartWidth}
-          height={chartHeight}
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          style={{
-            overflow: 'hidden',
-            userSelect: 'none',
-          }}
-          onPointerDown={(e) => {
-            // Only listen to primary button events (no right-clicks, etc).
-            if (e.button !== 0) return;
-            // Take note of the chart's on-screen position when the gesture starts.
-            updateChartOffset();
-            // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
-            e.currentTarget.setPointerCapture(e.pointerId);
-            // Report a pointer down, passing coordinates relative to the chart.
-            onPointerDown(e.pointerId, {
+      <svg
+        ref={setChartElement}
+        width={chartWidth}
+        height={chartHeight}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        style={{
+          overflow: 'hidden',
+          userSelect: 'none',
+        }}
+        onPointerDown={(e) => {
+          // Only listen to primary button events (no right-clicks, etc).
+          if (e.button !== 0) return;
+          // Take note of the chart's on-screen position when the gesture starts.
+          updateChartOffset();
+          // Capturing the pointer lets panning gestures avoid being interrupted when they stray outside the window bounds.
+          e.currentTarget.setPointerCapture(e.pointerId);
+          // Report a pointer down, passing coordinates relative to the chart.
+          onPointerDown(e.pointerId, {
+            x: e.clientX - chartOffset.current.x,
+            y: e.clientY - chartOffset.current.y,
+          });
+        }}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          onPointerUp(e.pointerId);
+        }}
+        onPointerLeave={(e) => {
+          onPointerUp(e.pointerId);
+        }}
+        onPointerCancel={(e) => {
+          onPointerUp(e.pointerId);
+        }}
+        onWheel={(e) => {
+          // Take note of the chart's on-screen position.
+          updateChartOffset();
+          // Report a wheel zoom event, passing coordinates relative to the chart.
+          onWheelZoom({
+            center: {
               x: e.clientX - chartOffset.current.x,
               y: e.clientY - chartOffset.current.y,
-            });
-          }}
-          onPointerUp={(e) => {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-            onPointerUp(e.pointerId);
-          }}
-          onPointerLeave={(e) => {
-            onPointerUp(e.pointerId);
-          }}
-          onPointerCancel={(e) => {
-            onPointerUp(e.pointerId);
-          }}
-          onWheel={(e) => {
-            // Take note of the chart's on-screen position.
-            updateChartOffset();
-            // Report a wheel zoom event, passing coordinates relative to the chart.
-            onWheelZoom({
-              center: {
-                x: e.clientX - chartOffset.current.x,
-                y: e.clientY - chartOffset.current.y,
-              },
-              zoomRatio: Math.pow(2, normalizeWheelDelta({
-                delta: e.deltaY,
-                deltaMode: e.deltaMode,
-                multiplier: e.ctrlKey ? 10 : 1,
-              })),
-            });
-          }}
-        >
-          <rect
-            x={0}
-            y={0}
-            width={chartWidth}
-            height={chartHeight}
-            fill="whitesmoke"
+            },
+            zoomRatio: Math.pow(2, normalizeWheelDelta({
+              delta: e.deltaY,
+              deltaMode: e.deltaMode,
+              multiplier: e.ctrlKey ? 10 : 1,
+            })),
+          });
+        }}
+      >
+        <rect
+          x={0}
+          y={0}
+          width={chartWidth}
+          height={chartHeight}
+          fill="whitesmoke"
+        />
+        <g transform={`translate(${chartWidth}, 0)`}>
+          <Axis
+            orient="left"
+            scale={yScale}
+            tickArguments={[10]}
+            color="#f99"
+            tickSizeInner={chartWidth - 40}
+            tickSizeOuter={chartWidth - 40}
+            scaleRev={scaleRev}
           />
-          <g transform={`translate(${chartWidth}, 0)`}>
-            <Axis
-              orient="left"
-              scale={yScale}
-              tickArguments={[10]}
-              color="#f99"
-              tickSizeInner={chartWidth - 40}
-              tickSizeOuter={chartWidth - 40}
-              scaleRev={scaleRev}
-            />
-          </g>
-          <g transform={`translate(0, ${chartHeight})`}>
-            <Axis
-              orient="top"
-              scale={xScale}
-              tickArguments={[10]}
-              color="#99f"
-              tickSizeInner={chartHeight - 40}
-              tickSizeOuter={chartHeight - 40}
-              scaleRev={scaleRev}
-            />
-          </g>
-          <rect
-            fill='red'
-            x={xScale(imageX)}
-            y={yScale(imageY + imageHeight)}
-            width={xScale(imageX + imageWidth) - xScale(imageX)}
-            height={yScale(imageY) - yScale(imageY + imageHeight)}
+        </g>
+        <g transform={`translate(0, ${chartHeight})`}>
+          <Axis
+            orient="top"
+            scale={xScale}
+            tickArguments={[10]}
+            color="#99f"
+            tickSizeInner={chartHeight - 40}
+            tickSizeOuter={chartHeight - 40}
+            scaleRev={scaleRev}
           />
-          <image
-            href={imageFile}
-            x={xScale(imageX)}
-            y={yScale(imageY + imageHeight)}
-            width={xScale(imageX + imageWidth) - xScale(imageX)}
-            height={yScale(imageY) - yScale(imageY + imageHeight)}
-            preserveAspectRatio="none"
-          />
-          <circle fill="gold" r={40}
-            cx={xScale(imageX + 60)}
-            cy={yScale(imageY + 500)}
-          />
+        </g>
+        <rect
+          fill='red'
+          x={xScale(imageX)}
+          y={yScale(imageY + imageHeight)}
+          width={xScale(imageX + imageWidth) - xScale(imageX)}
+          height={yScale(imageY) - yScale(imageY + imageHeight)}
+        />
+        <image
+          href={imageFile}
+          x={xScale(imageX)}
+          y={yScale(imageY + imageHeight)}
+          width={xScale(imageX + imageWidth) - xScale(imageX)}
+          height={yScale(imageY) - yScale(imageY + imageHeight)}
+          preserveAspectRatio="none"
+        />
+        <circle fill="gold" r={40}
+          cx={xScale(imageX + 60)}
+          cy={yScale(imageY + 500)}
+        />
 
-          {/* eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition */}
-          {false && gesture.inProgress ? <>
-            <Pointers
-              pointers={gesture.pointerPositions}
-              edge={gesture.currentGestureBBox}
-            />
-          </> : null}
-        </svg>
-      </div>
+        {/* eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition */}
+        {false && gesture.inProgress ? <>
+          <Pointers
+            pointers={gesture.pointerPositions}
+            edge={gesture.currentGestureBBox}
+          />
+        </> : null}
+      </svg>
     </div>
   </>;
 }

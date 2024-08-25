@@ -6,7 +6,6 @@ import { useRev } from 'use-rev';
 
 import { normalizeWheelDelta, usePanZoom } from '~';
 
-import { Pointers } from './etc/Pointers';
 import imageFile from './etc/taylor-kopel-JNm1dAElVtE-unsplash-min.jpg';
 
 
@@ -81,7 +80,6 @@ export function Story () {
     onPointerDown,
     onPointerUp,
     onWheelZoom,
-    gesture,
   } = usePanZoom({
     xScale,
     yScale,
@@ -235,13 +233,12 @@ export function Story () {
           cy={yScale(imageY + 500)}
         />
 
-        {/* eslint-disable-next-line no-constant-condition, @typescript-eslint/no-unnecessary-condition */}
-        {false && gesture.inProgress ? <>
+        {/* {false && gesture.inProgress ? <>
           <Pointers
             pointers={gesture.pointerPositions}
             edge={gesture.currentGestureBBox}
           />
-        </> : null}
+        </> : null} */}
       </svg>
     </div>
   </>;

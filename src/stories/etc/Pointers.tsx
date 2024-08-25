@@ -39,7 +39,7 @@ export function Pointers ({
             pointerId: {pointerId}
           </text>
         ) : undefined}
-      </g>
+      </g>,
     );
   }
 

@@ -19,7 +19,7 @@ const data = (() => {
   return ([] as [number, number, number][]).concat(
     Array.from({length: 300}, () => [random() + sqrt3, random() + 1, 0]),
     Array.from({length: 300}, () => [random() - sqrt3, random() + 1, 1]),
-    Array.from({length: 300}, () => [random(), random() - 1, 2])
+    Array.from({length: 300}, () => [random(), random() - 1, 2]),
   );
 })();
 const colorScale = scaleOrdinal<string>()

@@ -52,17 +52,17 @@ test('applyKTInverse', () => {
   expect(applyKTInverse(
     [-100, 100],
     1,
-    10
+    10,
   )).toEqual([-110, 90]);
   expect(applyKTInverse(
     [-100, 100],
     2,
-    0
+    0,
   )).toEqual([-50, 50]);
   expect(applyKTInverse(
     [-100, 100],
     2,
-    50
+    50,
   )).toEqual([-75, 25]);
 });
 

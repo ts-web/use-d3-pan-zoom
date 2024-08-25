@@ -1,3 +1,6 @@
+# 1.1.5
+- No changes -- GH Actions publish
+
 # 1.1.4
 - Fixed glitch with Date scales.
 

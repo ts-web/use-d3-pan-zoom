@@ -30,6 +30,7 @@ export function useTransform ({
   ky: number;
 } {
   return useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     scaleRev;
     const [initialXRangeStart, initialXRangeEnd] = initialXScale.range();
 

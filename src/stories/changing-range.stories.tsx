@@ -1,7 +1,7 @@
 import { scaleLinear, scalePow } from 'd3-scale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Axis } from 'react-d3-axis-ts';
-import { linear } from 'tween-functions-ts';
+import { linear } from 'tween-functions-ts/dist/linear';
 import useResizeObserver from 'use-resize-observer';
 import { useRev } from 'use-rev';
 

@@ -1,5 +1,7 @@
 [![npm version](https://img.shields.io/npm/v/use-d3-pan-zoom.svg)](https://www.npmjs.com/package/use-d3-pan-zoom)
 [![Downloads](https://img.shields.io/npm/dm/use-d3-pan-zoom.svg)](https://www.npmjs.com/package/use-d3-pan-zoom)
+![Uses TypeScript](https://img.shields.io/badge/Uses-Typescript-294E80.svg)
+
 
 # use-d3-pan-zoom
 
